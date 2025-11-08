@@ -55,8 +55,10 @@ export default function SignUp() {
 
             if (data.user) {
                 console.log('Sign up successful:', data);
-                
+                alert('Account created successfully! Check your email to verify your account.');
                 navigate('/hero');
+            } else {
+                alert('Check your email to confirm your account.');
             }
 
         } catch (error) {
@@ -75,15 +77,19 @@ export default function SignUp() {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/hero`, 
+                    redirectTo: `${window.location.origin}/hero`,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    },
                 },
             });
 
             if (error) throw error;
 
         } catch (error) {
-            console.error('Google sign in error:', error);
-            setError(error.message || 'An error occurred with Google sign in');
+            console.error('Google sign-in error:', error);
+            setError(error.message || 'An error occurred with Google sign-in');
             setIsLoading(false);
         }
     };
@@ -118,7 +124,7 @@ export default function SignUp() {
                 {/* Form */}
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="space-y-4">
-                        {/* First Name Field */}
+                        {/* First Name */}
                         <div>
                             <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
                                 First Name
@@ -135,7 +141,7 @@ export default function SignUp() {
                             />
                         </div>
 
-                        {/* Last Name Field */}
+                        {/* Last Name */}
                         <div>
                             <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
                                 Last Name
@@ -152,7 +158,7 @@ export default function SignUp() {
                             />
                         </div>
 
-                        {/* Email Field */}
+                        {/* Email */}
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                                 Email
@@ -169,7 +175,7 @@ export default function SignUp() {
                             />
                         </div>
 
-                        {/* Password Field */}
+                        {/* Password */}
                         <div>
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                                 Password
@@ -186,7 +192,7 @@ export default function SignUp() {
                             />
                         </div>
 
-                        {/* Confirm Password Field */}
+                        {/* Confirm Password */}
                         <div>
                             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
                                 Confirm Password
@@ -246,7 +252,7 @@ export default function SignUp() {
                     <div>
                         <button
                             type="button"
-                            onClick={handleGoogleSignUp}
+                            onClick={handleGoogleSignIn}
                             disabled={isLoading}
                             className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 rounded-2xl bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >

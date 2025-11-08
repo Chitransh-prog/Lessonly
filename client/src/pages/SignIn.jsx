@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { supabase } from '../lib/supabase'; // Adjust path as needed
+import LoginBtn from '../components/LoginBtn';
 
 export default function SignIn() {
     const navigate = useNavigate();
