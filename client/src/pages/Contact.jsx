@@ -1,13 +1,10 @@
 import React from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 
 export default function ContactPage() {
 
 
   return (
     <div className="min-h-screen bg-white text-gray-900 antialiased">
-      <Navbar />
 
       <main className=" w-[90%] md:w-[80%] lg:w-[70%] mx-auto px-4 sm:px-6 md:px-8 mt-8 md:mt-12 text-center w-full">
         <div className="flex flex-col items-center">
@@ -73,7 +70,6 @@ export default function ContactPage() {
   }
 `}</style>
 
-      <Footer />
     </div>
   );
 }

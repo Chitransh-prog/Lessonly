@@ -1,11 +1,8 @@
 import React from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-white text-gray-900 antialiased">
-      <Navbar />
+    <div className="h-full bg-white text-gray-900 antialiased">
       <main className="w-[90%] md:w-[80%] lg:w-[70%] mx-auto px-4 sm:px-6 md:px-8 mt-8 md:mt-12 w-full mb-[25px]">
         <div className="flex flex-col items-center mb-4">
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex items-center justify-center">
@@ -65,7 +62,6 @@ export default function AboutPage() {
   }
 `}</style>
 
-      <Footer />
     </div>
   );
 }
