@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { fetchUserAvatar } from "../api/UserCall";
 
 export default function Navbar() {
   const location = useLocation();
+  const [avatar, setAvatar] = useState(null);
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -12,10 +14,17 @@ export default function Navbar() {
     { name: "Contact", path: "/contact" },
   ];
 
+  useEffect(() => {
+    const getUserAvatar = async () => {
+      const avatarUrl = await fetchUserAvatar();
+      setAvatar(avatarUrl);
+    };
+    getUserAvatar();
+  });
+
   return (
     <nav className="w-full flex justify-center py-4 bg-transparent">
       <div className="w-[90%] md:w-[80%] lg:w-[70%] bg-[#0B0E1A] text-white flex items-center justify-between px-6 py-3 rounded-2xl shadow-sm">
-        
         <div className="flex items-center space-x-2">
           <img src="/Logo.png" alt="Lessonly Logo" className="h-7 w-7" />
           <span className="text-lg font-semibold tracking-tight">Lessonly</span>
@@ -40,7 +49,7 @@ export default function Navbar() {
 
         <div className="flex items-center">
           <img
-            src="/profile.jpg"
+            src={avatar}
             alt="User"
             className="w-8 h-8 rounded-full object-cover border border-gray-700"
           />
