@@ -1,44 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import TextType from '../animations/TextType';
-import { supabase } from '../lib/supabase'; 
+import {  fetchUserName } from '../api/UserCall';
 
 export default function Hero() {
-    // 1. State to hold the user's name
+
     const [userName, setUserName] = useState("Educator");
 
     useEffect(() => {
-        const fetchUserName = async () => {
-            try {
-                // Get the current session
-                const { data: { session } } = await supabase.auth.getSession();
-                
-                if (session?.user) {
-                    const userMetadata = session.user.user_metadata;
-                    
-                    // 2. Extract the name, prioritizing 'full_name' or 'name' from Google data
-                    const name = userMetadata?.full_name || userMetadata?.name || "Educator";
-                    setUserName(name);
-                }
-            } catch (error) {
-                console.error("Error fetching user name:", error);
-            }
-        };
 
-        fetchUserName();
-        
-        // Optional: Listen for auth changes to update the name in real-time
+        const getUserName = async () => {
+             const name = await fetchUserName();
+             if(!name){
+                 console.log("Cannot get name");
+             }
+             setUserName(name)
+           }
+
+        getUserName();
+
         const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session?.user) {
-                const userMetadata = session.user.user_metadata;
-                const name = userMetadata?.full_name || userMetadata?.name || "Educator";
-                setUserName(name);
-            }
-        });
-
-        return () => {
-            authListener.subscription.unsubscribe();
-        };
-    }, []);
+                       if (session?.user) {
+                           console.log("Updated name: ",session);
+                           const userMetadata = session.user.user_metadata;
+                           const name = userMetadata?.full_name || userMetadata?.name || "Educator";
+                           return name;
+                       } else{
+                           console.log("Session not found");
+                       }
+                   });
+        
+                   return () => {
+                    authListener.subscription.unsubscribe();
+                };
+    }, [])
 
 
     return(
@@ -46,7 +40,6 @@ export default function Hero() {
         <div className="h-screen flex flex-col items-center justify-center ">
             <img src='Logo.png' alt="Lessonly Logo"/>
             
-            {/* Display the typing animation first */}
             <TextType className='text-6xl font-black'
                 text={["Welcome to Lessonly!","Welcome to Lessonly!"]}
                 typingSpeed={200}
