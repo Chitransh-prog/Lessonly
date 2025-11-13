@@ -7,7 +7,7 @@ export default function Navbar() {
   const [avatar, setAvatar] = useState(null);
 
   const navLinks = [
-    { name: "Home", path: "/" },
+    { name: "Home", path: "/hero" },
     { name: "Create", path: "/create" },
     { name: "Mindmaps", path: "/mindmaps" },
     { name: "About", path: "/about" },

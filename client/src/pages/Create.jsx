@@ -8,7 +8,7 @@ export default function Create() {
           <div className="w-96 h-[95vh] p-3">
             <div className="w-full h-36">
               <div className="flex justify-center items-center">
-                <img src="/public/logo.png" alt="logo" className="h-20 w-20" />
+                <img src="Logo.png" alt="logo" className="h-20 w-20" />
               </div>
               <div className="flex justify-center items-center">
                 <TextType
