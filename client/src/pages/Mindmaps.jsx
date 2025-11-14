@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { fetchApiResponse } from "../api/OpenRouter";
+import { fetchApiResponse_Mindmap } from "../api/OpenRouter";
 import * as pdfjsLib from "pdfjs-dist";
 import { GlobalWorkerOptions } from "pdfjs-dist/build/pdf";
 import workerSrc from "pdfjs-dist/build/pdf.worker.mjs?url";
+import Flow from "../components/Flow.tsx";
 
 GlobalWorkerOptions.workerSrc = workerSrc;
 
 export default function Mindmaps() {
-  const [result, setResult] = useState(null);
+  const [nodes, setNodes] = useState(null);
+  const [edges, setEdges] = useState(null);
   const [loading, setLoading] = useState(false);
   const [pdfFile, setPdfFile] = useState(null);
 
@@ -45,8 +47,9 @@ export default function Mindmaps() {
       setLoading(true);
 
       const extractedText = await extractText(pdfFile);
-      const completion = await fetchApiResponse(extractedText);
-      setResult(completion);
+      const { nodes, edges } = await fetchApiResponse_Mindmap(extractedText);
+      setNodes(nodes);
+      setEdges(edges);
       setLoading(false);
     } catch (error) {
       console.error(
@@ -65,7 +68,11 @@ export default function Mindmaps() {
 
       {loading && <h2>Processing... Please wait.</h2>}
 
-      {result && <pre>{result}</pre>}
+      {nodes && edges && (
+        <pre>
+          <Flow nodes={nodes} edges={edges} />
+        </pre>
+      )}
     </>
   );
 }
