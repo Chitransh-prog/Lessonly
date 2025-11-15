@@ -3,7 +3,7 @@ import TextType from "../animations/TextType";
 import { fetchApiResponse_Mindmap } from "../api/OpenRouter";
 import { saveMindmapToDB } from "../api/mindmap";
 import { supabase } from "../lib/supabase";
-
+import ExportButton from "../components/ExportButton";
 import * as pdfjsLib from "pdfjs-dist";
 import { GlobalWorkerOptions } from "pdfjs-dist/build/pdf";
 import workerSrc from "pdfjs-dist/build/pdf.worker.mjs?url";
@@ -84,7 +84,6 @@ export default function Mindmaps() {
       });
 
       alert("Mindmap saved successfully!");
-
     } catch (error) {
       console.error("❌ Error:", error);
       alert("Something went wrong while generating or saving the mindmap");
@@ -95,7 +94,6 @@ export default function Mindmaps() {
 
   return (
     <div className="h-screen flex flex-col items-center justify-start pt-10 gap-6">
-
       <img src="Logo.png" alt="Lessonly Logo" className="h-24" />
 
       <TextType
@@ -124,16 +122,20 @@ export default function Mindmaps() {
         className="border h-12 w-96 rounded-sm border-gray-300 px-4 opacity-70 cursor-pointer"
       />
 
-      {/* Generate */}
-      <button
-        onClick={handleSubmit}
-        disabled={!pdfFile || loading}
-        className={`mt-3 px-6 py-3 rounded-lg text-white font-semibold 
+      <div className="flex justify-around items-center">
+        {/* Generate */}
+        <button
+          onClick={handleSubmit}
+          disabled={!pdfFile || loading}
+          className={`mt-3 px-6 py-3 rounded-lg text-white font-semibold 
           ${!pdfFile ? "bg-gray-500 cursor-not-allowed" : "bg-black hover:bg-gray-900"}
         `}
-      >
-        {loading ? "Processing..." : "Generate & Save Mindmap"}
-      </button>
+        >
+          {loading ? "Processing..." : "Generate & Save Mindmap"}
+        </button>
+
+        <ExportButton />
+      </div>
 
       {/* React Flow Output */}
       {nodes && edges && (
