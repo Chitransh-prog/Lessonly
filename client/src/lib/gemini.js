@@ -22,11 +22,29 @@ export async function generateEducationalContent({
     });
 
     const prompt = `
+    You are an AI that must follow strict formatting rules.
+
+    TASK:
     Create "${type}" for the topic "${topic}".
     Summary: ${summary || "No summary provided"}
-    Grade Level: ${grade}
+    Grade: ${grade}
     Tone: ${tone}
-    Language: ${language}`
+    Language: ${language}
+
+    STRICT RULES:
+    1. Do NOT use Markdown.
+    2. Do NOT use: #, *, -, _, ~, [, ], >.
+    3. Do NOT use <b> tags.
+    4. When making text bold, wrap it like this: [BOLD]Example Text[/BOLD]
+    5. Only output plain text.
+    6. No headings like # or ###.
+    7. No bullet points. Use numbered items:
+      1. Example
+      2. Example
+
+    Now produce the final formatted output:
+    `;
+
 
 
 
