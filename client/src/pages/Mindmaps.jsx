@@ -80,7 +80,6 @@ export default function Mindmaps() {
       });
 
       alert("Mindmap saved successfully!");
-
     } catch (error) {
       console.error("❌ Error:", error);
       alert("Something went wrong while generating or saving the mindmap");
@@ -91,7 +90,6 @@ export default function Mindmaps() {
 
   return (
     <div className="h-screen flex flex-col items-center justify-start pt-10 gap-6">
-
       <img src="Logo.png" alt="Lessonly Logo" className="h-24" />
 
       <TextType
@@ -133,16 +131,20 @@ export default function Mindmaps() {
                   />
                 </label>
 
-      {/* Generate */}
-      <button
-        onClick={handleSubmit}
-        disabled={!pdfFile || loading}
-        className={`mt-3 px-6 py-3 rounded-lg text-white font-semibold 
+      <div className="flex justify-around items-center">
+        {/* Generate */}
+        <button
+          onClick={handleSubmit}
+          disabled={!pdfFile || loading}
+          className={`mt-3 px-6 py-3 rounded-lg text-white font-semibold 
           ${!pdfFile ? "bg-gray-500 cursor-not-allowed" : "bg-black hover:bg-gray-900"}
         `}
-      >
-        {loading ? "Processing..." : "Generate & Save Mindmap"}
-      </button>
+        >
+          {loading ? "Processing..." : "Generate & Save Mindmap"}
+        </button>
+
+        <ExportButton />
+      </div>
 
             {/* Mindmap Flow */}
             {nodes && edges && (
