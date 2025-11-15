@@ -1,6 +1,59 @@
+import { useState } from "react";
 import TextType from "../animations/TextType";
+import { generateEducationalContent } from "../lib/gemini";
+import { saveGeneratedContent } from "../api/content";
+import { supabase } from "../lib/supabase";
+
 
 export default function Create() {
+  const [topic, setTopic] = useState("");
+  const [summary, setSummary] = useState("");
+  const [type, setType] = useState("");
+  const [grade, setGrade] = useState("");
+  const [tone, setTone] = useState("");
+  const [language, setLanguage] = useState("");
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+  const getUserId = async () => {
+  const { data } = await supabase.auth.getUser();
+  return data?.user?.id || null;
+};
+
+  const handleGenerate = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+  
+
+    try {
+      const data = await generateEducationalContent({
+        topic,
+        summary,
+        type,
+        grade,
+        tone,
+        language,
+      });
+      setResult(data);
+      // Saving to Supabase
+      const user_id = await getUserId();
+
+      await saveGeneratedContent({
+        title: topic,
+        description: summary || "",
+        content: data,
+        user_id,
+      });
+
+alert("Content saved successfully!");
+
+    } catch (err) {
+      console.error(err);
+      setResult("Error generating content.");
+    }
+
+    setLoading(false);
+  };
+
   return (
     <>
       <section className="min-h-screen w-full flex justify-center items-center">
@@ -21,90 +74,92 @@ export default function Create() {
                 />
               </div>
             </div>
-            <div className="w-full h-125 flex justify-center items-center">
-              <form action="">
-                <label htmlFor="topic" className="text-sm font-medium">
-                  Topic:
-                </label>{" "}
-                <br />
-                <input
-                  type="text"
-                  id="topic"
-                  placeholder="Enter your Topic"
-                  className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
-                />{" "}
-                <br />
-                <label htmlFor="summary" className="text-sm font-medium">
-                  Optional Summary:
-                </label>{" "}
-                <br />
-                <input
-                  type="text"
-                  id="summary"
-                  placeholder="Enter optional summary fot it"
-                  className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
-                />{" "}
-                <br />
-                <label htmlFor="type" className="text-sm font-medium">
-                  Select Type:
-                </label>{" "}
-                <br />
-                <select
-                  name="type"
-                  id="type"
-                  className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
-                >
-                  <option value="Select type">Select Type</option>
-                </select>
-                <label htmlFor="lesson para" className="text-sm font-medium">
-                  Lesson Parameters:
-                </label>{" "}
-                <br />
-                <select
-                  name="lesson para"
-                  id="lesson para"
-                  className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
-                >
-                  <option value="Select type">
-                    Select the Audience/Grade level
-                  </option>
-                </select>
-                <select
-                  name="lesson tone"
-                  id="lesson tone"
-                  className="border h-12 w-85 mt-3 rounded-sm border-gray-300 px-2 opacity-50"
-                >
-                  <option value="Select type">Select the Tone style</option>
-                </select>
-                <label htmlFor="language" className="text-sm font-medium">
-                  Language:
-                </label>{" "}
-                <br />
-                <input
-                  type="text"
-                  id="language"
-                  placeholder="Enter the language for generation"
-                  className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
-                />{" "}
-                <br /> <br />
-                <button
-                  type="submit"
-                  className="border h-12 w-85 rounded-xl border-gray-300 bg-black px-2 text-white font-semibold text-3xl"
-                >
-                  Generate with
-                  <img src="AI.svg" alt="AI logo" className="inline-block" />
-                </button>
-              </form>
-            </div>
+
+            {/* Form */}
+            <form onSubmit={handleGenerate} className="space-y-4">
+
+              <label className="text-sm font-medium">Topic:</label>
+              <input
+                type="text"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
+                placeholder="Enter your Topic"
+                required
+              />
+
+              <label className="text-sm font-medium">Optional Summary:</label>
+              <textarea
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
+                placeholder="Enter optional summary"
+              />
+
+              <label className="text-sm font-medium">Select Type:</label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
+              >
+                <option>Select Type</option>
+                <option value="Lesson Plan">Lesson Plan</option>
+                <option value="Quiz">Quiz</option>
+                <option value="Study Notes">Study Notes</option>
+                <option value="Short Summary">Short Summary</option>
+                <option value="Long Explanation">Long Explanation</option>
+              </select>
+
+              <label className="text-sm font-medium">Grade Level:</label>
+              <select
+                value={grade}
+                onChange={(e) => setGrade(e.target.value)}
+                className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
+              >
+                <option>Select Grade</option>
+                <option value="High School">High School</option>
+                <option value="Senior Secondary">Senior Secondary</option>
+                <option value="Elementary">Elementary</option>
+                <option value="Primary">Primary</option>
+                <option value="Pre-Primary">Pre-Primary</option>
+              </select>
+
+              <label className="text-sm font-medium">Tone:</label>
+              <select
+                value={tone}
+                onChange={(e) => setTone(e.target.value)}
+                className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
+              >
+                <option>Select Tone</option>
+                <option value="Professional/Formal">Professional/Formal</option>
+                <option value="Academic">Academic</option>
+                <option value="Informal">Informal</option>
+              </select>
+
+              <label className="text-sm font-medium">Language:</label>
+              <input
+                type="text"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="border h-12 w-85 rounded-sm border-gray-300 px-2 opacity-50"
+                placeholder="Enter language"
+              />
+
+              <button
+                type="submit"
+                className="border h-12 w-85 rounded-xl border-gray-300 bg-black px-2 text-white font-semibold text-3xl"
+              >
+                {loading ? "Generating..." : "Generate with "}
+                {!loading && <img src="AI.svg" alt="AI" className="inline-block" />}
+              </button>
+            </form>
           </div>
-          <button className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-0 right-0">
-            <img
-              src="history.svg"
-              alt="History logo"
-              className="inline-block"
-            />
-            History
-          </button>
+
+          {/* Output */}
+          <div className="w-[55%] p-5 bg-white rounded-lg shadow-md overflow-y-auto">
+            <h2 className="text-xl font-semibold mb-3">Generated Content:</h2>
+            <div className="whitespace-pre-wrap">{result}</div>
+          </div>
         </div>
       </section>
     </>
