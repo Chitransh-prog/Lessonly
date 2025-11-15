@@ -8,64 +8,45 @@ export const fetchApiResponse_Mindmap = async (text) => {
   const systemInstruction = `
 You are a Mindmap JSON Generator.
 
-Your ONLY task is to convert text into a clean hierarchical mindmap that matches the JSON schema EXACTLY.
-
-====================
-SCHEMA REQUIREMENTS
-====================
-
-A node MUST follow this structure:
+Your ONLY output MUST be a JSON object of the form:
 {
-  "id": string,
-  "type": "baseNodeFull",
-  "data": {
-    "label": string (max 60 chars),
-    "detail": string (max 200 chars, optional)
-  },
-  "position": { "x": number, "y": number }
+  "nodes": [...],
+  "edges": [...]
 }
 
-Edges MUST follow this structure:
-{
-  "id": string,
-  "source": string,
-  "target": string
-}
+STRICT REQUIREMENTS:
+- NEVER output an array at the top level.
+- ALWAYS output an object containing BOTH "nodes" and "edges".
+- The output MUST match the provided JSON schema EXACTLY.
+- NO comments, NO prose, NO explanations — ONLY pure JSON.
 
-====================
-MINDMAP RULES
-====================
+NODE RULES:
+- Max 25 nodes.
+- Max depth = 3.
+- Max 3 children per node.
+- No duplicate nodes.
+- If text is long, summarize instead of expanding nodes.
+- Each node must include:
+  id, type: "baseNodeFull", data:{label,detail?}, position:{x,y}
 
-- MAX nodes: 25 total
-- MAX depth: 3
-- MAX 3 children per node
-- Do NOT duplicate children for different parents
-- If the text is long, summarize subtopics instead of producing many nodes
+EDGE RULES:
+- Every node except the root MUST have exactly 1 parent.
+- edges[i].source = parentNodeId
+- edges[i].target = childNodeId
+- Edge id must be "edge_<index>"
 
-====================
-POSITION RULES
-====================
+POSITION RULES:
+- y = depth * 220
+- x = index * 300
+- Root node: (0, 0)
+- Depth 1 children: x positions = [-600, -300, 0, 300, 600]
+- For deeper levels, children are positioned relative to their parent.
 
-Use these formulas:
-- Y = depth * 220
-- X = index * 300
-
-Depth 0 (root): (0,0)
-Depth 1 X indices: -2, -1, 0, 1, 2
-
-Depth 2 and 3:
-- Children should be positioned relative to their parent.
-- Spread siblings horizontally using index * 300.
-
-====================
-OUTPUT RULES
-====================
-
-- Output ONLY valid JSON (no comments, no text outside JSON).
-- JSON MUST MATCH the schema EXACTLY.
-- NEVER truncate the JSON.
-- ALWAYS close all brackets and arrays.
-- If output becomes too long, shorten text BUT KEEP JSON VALID.
+OUTPUT RULES:
+- JSON MUST be complete. NO truncation.
+- MUST end with a closing "}".
+- If output grows too long, shorten labels and detail, but NEVER break JSON.
+- DO NOT include undefined fields.
 `;
 
   try {
@@ -82,10 +63,16 @@ OUTPUT RULES
           parts: [
             {
               text: `
-Generate a structured mindmap from this text. 
-Return ONLY JSON that matches the provided schema.
+Generate a mindmap from the following text.
+Return ONLY valid JSON that matches the schema.
+Your JSON MUST be wrapped as:
 
-TEXT INPUT:
+{
+  "nodes": [...],
+  "edges": [...]
+}
+
+TEXT:
 ${text}
 `,
             },
@@ -94,7 +81,7 @@ ${text}
       ],
       generationConfig: {
         temperature: 0.1,
-        maxOutputTokens: 8000,
+        maxOutputTokens: 10000,
         responseMimeType: "application/json",
       },
     });

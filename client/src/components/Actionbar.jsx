@@ -27,9 +27,46 @@ export const ActionBarNodeDemo = memo(({ data }) => {
     setNodes((prev) => prev.filter((node) => node.id !== id));
   }, [id, setNodes]);
 
+  const handleTitleChange = () => {
+    const newTitle = prompt("Enter new title:", data.label);
+    if (!newTitle) return;
+
+    setNodes((nodes) =>
+      nodes.map((node) =>
+        node.id === id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                label: newTitle,
+              },
+            }
+          : node
+      )
+    );
+  };
+
+  const handleDescriptionChange = () => {
+    const newDesc = prompt("Enter new description:", data.detail || "");
+    if (newDesc === null) return;
+
+    setNodes((nodes) =>
+      nodes.map((node) =>
+        node.id === id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                detail: newDesc,
+              },
+            }
+          : node
+      )
+    );
+  };
+
   return (
     <BaseNode className="max-w-[260px] w-fit relative">
-      {/* ----- HANDLES ARE REQUIRED ----- */}
       <Handle
         type="target"
         position={Position.Top}
@@ -57,6 +94,14 @@ export const ActionBarNodeDemo = memo(({ data }) => {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleDelete}>
               Delete Node
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleTitleChange}>
+              Edit title
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleDescriptionChange}>
+              Edit Description
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

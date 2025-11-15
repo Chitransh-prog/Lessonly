@@ -6,6 +6,12 @@ import {
   ReactFlow,
 } from "@xyflow/react";
 
+import { ZoomSlider } from "./zoom-slider";
+import { Button } from "./ui/button";
+import { Panel } from "@xyflow/react";
+
+import { useState } from "react";
+
 import { ActionBarNodeDemo } from "./Actionbar";
 
 const nodeTypes = {
@@ -22,6 +28,9 @@ interface FlowProps {
 }
 
 export default function App({ nodes, edges }: FlowProps) {
+  const [orientation, setOrientation] = useState<"horizontal" | "vertical">(
+    "horizontal"
+  );
   return (
     <div className="h-full w-full flex items-center justify-center">
       <div className="h-screen w-full">
@@ -33,6 +42,17 @@ export default function App({ nodes, edges }: FlowProps) {
           fitViewOptions={fitViewOptions}
         >
           <Background />
+          <ZoomSlider position="top-left" orientation={orientation} />
+          <Panel position="bottom-right" />
+          <Button
+            onClick={() =>
+              setOrientation(
+                orientation === "horizontal" ? "vertical" : "horizontal"
+              )
+            }
+          >
+            Toggle orientation
+          </Button>
         </ReactFlow>
       </div>
     </div>
