@@ -1,99 +1,76 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { mindmapSchema } from "../utils/MindmapSchema";
+import GetNodesAndEdges from "@/utils/GetNodesAndEdges";
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const ai = new GoogleGenerativeAI(apiKey);
 
 export const fetchApiResponse_Mindmap = async (text) => {
   const systemInstruction = `
-You are a Mindmap JSON Generator.
+You generate clean hierarchical OUTLINES.
+Return ONLY plain text, NEVER JSON.
+Each bullet must contain a label and a multi-sentence explanation.
+`;
 
-Your ONLY output MUST be a JSON object of the form:
-{
-  "nodes": [...],
-  "edges": [...]
-}
-
-STRICT REQUIREMENTS:
-- NEVER output an array at the top level.
-- ALWAYS output an object containing BOTH "nodes" and "edges".
-- The output MUST match the provided JSON schema EXACTLY.
-- NO comments, NO prose, NO explanations — ONLY pure JSON.
-
-NODE RULES:
-- Max 25 nodes.
-- Max depth = 3.
-- Max 3 children per node.
-- No duplicate nodes.
-- If text is long, summarize instead of expanding nodes.
-- Each node must include:
-  id, type: "baseNodeFull", data:{label,detail?}, position:{x,y}
-
-EDGE RULES:
-- Every node except the root MUST have exactly 1 parent.
-- edges[i].source = parentNodeId
-- edges[i].target = childNodeId
-- Edge id must be "edge_<index>"
-
-POSITION RULES:
-- y = depth * 220
-- x = index * 300
-- Root node: (0, 0)
-- Depth 1 children: x positions = [-600, -300, 0, 300, 600]
-- For deeper levels, children are positioned relative to their parent.
+  const outlinePrompt = `
+Extract a clean hierarchical OUTLINE with detailed explanations.
 
 OUTPUT RULES:
-- JSON MUST be complete. NO truncation.
-- MUST end with a closing "}".
-- If output grows too long, shorten labels and detail, but NEVER break JSON.
-- DO NOT include undefined fields.
+- Output ONLY an outline, NEVER JSON.
+- EXACT FORMAT:
+
+Root: 2–4 sentence detailed explanation
+- Child 1: 2–4 sentence detailed explanation
+  - Subchild 1: 2–4 sentence explanation
+  - Subchild 2: 2–4 sentence explanation
+- Child 2: 2–4 sentence explanation
+
+STRUCTURE RULES:
+- Max depth = 3
+- Max 5 children per parent
+- Labels must remain SHORT (2–4 words)
+- Explanations must be DETAILED paragraphs (2–4 sentences each)
+- Use ONLY:
+  • hyphens for bullets
+  • colons for explanation start
+  • letters, numbers, spaces
+
+Do NOT return markdown.  
+Do NOT wrap in code blocks.  
+Do NOT return JSON.
+
+TEXT INPUT:
+${text}
 `;
 
   try {
     const model = ai.getGenerativeModel({
       model: "gemini-2.5-flash",
       systemInstruction,
-      responseSchema: mindmapSchema,
     });
 
     const response = await model.generateContent({
       contents: [
         {
           role: "user",
-          parts: [
-            {
-              text: `
-Generate a mindmap from the following text.
-Return ONLY valid JSON that matches the schema.
-Your JSON MUST be wrapped as:
-
-{
-  "nodes": [...],
-  "edges": [...]
-}
-
-TEXT:
-${text}
-`,
-            },
-          ],
+          parts: [{ text: outlinePrompt }],
         },
       ],
       generationConfig: {
         temperature: 0.1,
-        maxOutputTokens: 10000,
-        responseMimeType: "application/json",
+        maxOutputTokens: 4096,
+        responseMimeType: "text/plain",
       },
     });
 
-    const raw = await response.response.text();
+    const outline = await response.response.text();
+    console.log("🔹 OUTLINE:\n", outline);
 
-    if (!raw.trim().startsWith("{") || !raw.trim().endsWith("}")) {
-      console.error("Incomplete JSON returned:", raw);
-      return { nodes: [], edges: [] };
-    }
+    const { nodes, edges } = GetNodesAndEdges(outline);
 
-    return JSON.parse(raw);
+    console.log("🔹 NODES:", nodes);
+    console.log("🔹 EDGES:", edges);
+
+    return { nodes, edges };
   } catch (error) {
     console.error("Gemini Mindmap API Error:", error);
     return { nodes: [], edges: [] };
