@@ -1,125 +1,114 @@
-import { OpenRouter } from "@openrouter/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { mindmapSchema } from "../utils/MindmapSchema";
+
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const ai = new GoogleGenerativeAI(apiKey);
 
 export const fetchApiResponse_Mindmap = async (text) => {
-  const openRouter = new OpenRouter({
-    apiKey: import.meta.env.VITE_OPENROUTER_API_KEY,
-  });
+  const systemInstruction = `
+You are a Mindmap JSON Generator.
 
-  try {
-    const completion = await openRouter.chat.send({
-      model: "openai/gpt-4o-mini",
-      max_tokens: 3000,
-      messages: [
-        {
-          role: "system",
-          content: `
-You are an intelligent mind-map engine.
-Your output is ALWAYS a multi-layer hierarchical React Flow mindmap.
+Your ONLY task is to convert text into a clean hierarchical mindmap that matches the JSON schema EXACTLY.
 
-VERY IMPORTANT:
-- Every node **must** include: "type": "baseNodeFull"
-- Mindmap spacing must be wide and clean.
-`,
-        },
+====================
+SCHEMA REQUIREMENTS
+====================
 
-        {
-          role: "user",
-          content: `
-Using the extracted text, generate a *hierarchical* mindmap for React Flow.
-
-You MUST follow these updated rules EXACTLY:
-
-────────────────────────────────
-🌳 1. JSON OUTPUT FORMAT (STRICT)
-────────────────────────────────
+A node MUST follow this structure:
 {
-  "nodes": [
-    {
-      "id": "node-1",
-      "type": "baseNodeFull",
-      "data": { 
-        "label": "string", 
-        "detail?": "string" 
-      },
-      "position": { "x": number, "y": number }
-    }
-  ],
-  "edges": [
-    {
-      "id": "edge-1",
-      "source": "node-1",
-      "target": "node-2"
-    }
-  ]
+  "id": string,
+  "type": "baseNodeFull",
+  "data": {
+    "label": string (max 60 chars),
+    "detail": string (max 200 chars, optional)
+  },
+  "position": { "x": number, "y": number }
 }
 
-NO MARKDOWN. NO BACKTICKS. ONLY PURE JSON.
+Edges MUST follow this structure:
+{
+  "id": string,
+  "source": string,
+  "target": string
+}
 
-────────────────────────────────
-📍 2. POSITIONING RULES (IMPROVED SPACING)
-────────────────────────────────
-- Vertical spacing = depth * **220**   (more room!)
-- Horizontal spacing = index * **300** (more spread!)
-- Root node = { x: 0, y: 0 }
+====================
+MINDMAP RULES
+====================
 
-Depth levels:
-- Depth 0 = main topic (center)
-- Depth 1 = subtopic → y = 220
-- Depth 2 = details → y = 440
-- Depth 3 = examples → y = 660
-- Depth 4 = deep detail → y = 880
+- MAX nodes: 25 total
+- MAX depth: 3
+- MAX 3 children per node
+- Do NOT duplicate children for different parents
+- If the text is long, summarize subtopics instead of producing many nodes
 
-────────────────────────────────
-📌 3. NODE DATA RULES
-────────────────────────────────
-- Short text → data.label
-- Long text → data.detail
-- data.detail MUST be <= 300 characters
-- Every node MUST include: "type": "baseNodeFull"
+====================
+POSITION RULES
+====================
 
-────────────────────────────────
-🔗 4. EDGE RULES
-────────────────────────────────
-- Only parent → child edges
-- ID format: "edge-1", "edge-2", "edge-3"
+Use these formulas:
+- Y = depth * 220
+- X = index * 300
 
-────────────────────────────────
-🆔 5. ID RULES
-────────────────────────────────
-- Nodes: "node-1", "node-2", ...
-- Edges: "edge-1", "edge-2", ...
+Depth 0 (root): (0,0)
+Depth 1 X indices: -2, -1, 0, 1, 2
 
-────────────────────────────────
-🧠 6. HIERARCHY REQUIREMENT
-────────────────────────────────
-Find REAL hierarchy:
-- Level 0 → main topics
-- Level 1 → subtopics
-- Level 2 → detailed concepts
-- Level 3+ → definitions, examples, explanations
+Depth 2 and 3:
+- Children should be positioned relative to their parent.
+- Spread siblings horizontally using index * 300.
 
-If text is messy, infer logical hierarchy.
+====================
+OUTPUT RULES
+====================
 
-────────────────────────────────
+- Output ONLY valid JSON (no comments, no text outside JSON).
+- JSON MUST MATCH the schema EXACTLY.
+- NEVER truncate the JSON.
+- ALWAYS close all brackets and arrays.
+- If output becomes too long, shorten text BUT KEEP JSON VALID.
+`;
 
-Extracted text:
-${text}
-`,
-        },
-      ],
-      stream: false,
+  try {
+    const model = ai.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction,
+      responseSchema: mindmapSchema,
     });
 
-    const output = completion.choices[0].message.content;
-    const result = JSON.parse(output);
-    const nodes = result.nodes;
-    const edges = result.edges;
-    console.log(result);
-    console.log(nodes);
-    console.log(edges);
+    const response = await model.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `
+Generate a structured mindmap from this text. 
+Return ONLY JSON that matches the provided schema.
 
-    return { nodes, edges };
+TEXT INPUT:
+${text}
+`,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 8000,
+        responseMimeType: "application/json",
+      },
+    });
+
+    const raw = await response.response.text();
+
+    if (!raw.trim().startsWith("{") || !raw.trim().endsWith("}")) {
+      console.error("Incomplete JSON returned:", raw);
+      return { nodes: [], edges: [] };
+    }
+
+    return JSON.parse(raw);
   } catch (error) {
-    console.error("Error while fetching Api response : ", error);
+    console.error("Gemini Mindmap API Error:", error);
+    return { nodes: [], edges: [] };
   }
 };
