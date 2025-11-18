@@ -16,10 +16,15 @@ export default function Navbar() {
 
   useEffect(() => {
     const getUserAvatar = async () => {
-      const avatarUrl = await fetchUserAvatar();
-      setAvatar(avatarUrl);
+      try {
+        const avatarUrl = await fetchUserAvatar();
+        setAvatar(avatarUrl);
+      } catch (error) {
+        console.log("Error while fetching Avatar url", error);
+      }
     };
     getUserAvatar();
+    console.log(avatar);
   });
 
   return (
