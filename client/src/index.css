@@ -1,5 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Force edge visibility */
+.react-flow__edge-path {
+  stroke-opacity: 1 !important;
+  stroke-width: 2px !important; /* Try forcing them thicker */
+}
 
 @custom-variant dark (&:is(.dark *));
 

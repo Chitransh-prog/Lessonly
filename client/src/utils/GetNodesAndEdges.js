@@ -4,9 +4,8 @@ export default function GetNodesAndEdges(outline) {
 }
 
 /* ---------------------------------------------
-   PARSER (safe, detailed explanations supported)
+   PARSER (Same as before)
 ---------------------------------------------- */
-
 function parseOutline(outline) {
   if (!outline || typeof outline !== "string") {
     return { label: "Invalid Input", detail: "", children: [] };
@@ -61,25 +60,45 @@ function parseOutline(outline) {
 }
 
 /* ---------------------------------------------
-   ADVANCED AUTO-LAYOUT (NO OVERLAP)
+   ADVANCED AUTO-LAYOUT (WITH NODES LIMIT)
 ---------------------------------------------- */
 
 function buildMindmapTree(root) {
   const nodes = [];
   const edges = [];
 
+  // --- CONFIGURATION ---
+  const MAX_NODES = 20; // <--- CHANGE THIS NUMBER TO SET YOUR LIMIT
   const BASE_X_SPACING = 340;
   const BASE_Y_SPACING = 260;
 
-  function getSubtreeSize(node) {
+  // Helper: Calculate size only for nodes we are actually going to render
+  // This prevents the layout from calculating space for nodes we cut off.
+  function getSubtreeSize(node, currentCount) {
+    if (currentCount >= MAX_NODES) return 0;
     if (!node.children || node.children.length === 0) return 1;
-    return node.children.reduce((acc, child) => acc + getSubtreeSize(child), 0);
+
+    let size = 0;
+    let localCount = currentCount + 1; // +1 for self
+
+    for (const child of node.children) {
+      const childSize = getSubtreeSize(child, localCount);
+      size += childSize;
+      // Estimate how many nodes that child took up (heuristic)
+      // This isn't perfect but good enough for layout spacing
+      if (childSize > 0) localCount += childSize;
+    }
+    return size === 0 ? 1 : size;
   }
 
   function traverse(node, depth = 0, xOffset = 0, parentId = null) {
+    // 1. STOP if we reached the limit
+    if (nodes.length >= MAX_NODES) return;
+
     const id = `node_${nodes.length}`;
 
-    const subtreeSize = getSubtreeSize(node);
+    // 2. Calculate subtree size based on remaining allowance
+    const subtreeSize = getSubtreeSize(node, nodes.length);
     const positionX = xOffset;
 
     nodes.push({
@@ -102,15 +121,20 @@ function buildMindmapTree(root) {
 
     let accumulatedShift = xOffset - ((subtreeSize - 1) * BASE_X_SPACING) / 2;
 
-    node.children?.forEach((child) => {
-      const childSize = getSubtreeSize(child);
-      const childCenter =
-        accumulatedShift + ((childSize - 1) * BASE_X_SPACING) / 2;
+    if (node.children) {
+      node.children.forEach((child) => {
+        // Check limit before processing child
+        if (nodes.length >= MAX_NODES) return;
 
-      traverse(child, depth + 1, childCenter, id);
+        const childSize = getSubtreeSize(child, nodes.length);
+        const childCenter =
+          accumulatedShift + ((childSize - 1) * BASE_X_SPACING) / 2;
 
-      accumulatedShift += childSize * BASE_X_SPACING;
-    });
+        traverse(child, depth + 1, childCenter, id);
+
+        accumulatedShift += childSize * BASE_X_SPACING;
+      });
+    }
   }
 
   traverse(root, 0, 0, null);

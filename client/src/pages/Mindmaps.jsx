@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import TextType from "../animations/TextType";
 import { fetchApiResponse_Mindmap } from "../api/OpenRouter";
 import { saveMindmapToDB } from "../api/mindmap";
@@ -7,6 +7,7 @@ import ExportButton from "../components/ExportButton";
 import * as pdfjsLib from "pdfjs-dist";
 import { GlobalWorkerOptions } from "pdfjs-dist/build/pdf";
 import workerSrc from "pdfjs-dist/build/pdf.worker.mjs?url";
+import { ReactFlowProvider } from "@xyflow/react";
 
 import Flow from "../components/Flow.tsx";
 
@@ -20,12 +21,16 @@ export default function Mindmaps() {
   const [pdfText, setPdfText] = useState("");
   const [mindmapName, setMindmapName] = useState("");
 
-  // Auth user fetch
+  // ⭐ THIS IS USED FOR PNG EXPORT (nodes + edges)
+  const reactFlowWrapper = useRef(null);
+
+  // Fetch authenticated user ID
   const getUserId = async () => {
     const { data } = await supabase.auth.getUser();
     return data?.user?.id || null;
   };
 
+  // PDF → Text Extractor
   const extractText = async (file) => {
     try {
       const arrayBuffer = await file.arrayBuffer();
@@ -45,6 +50,7 @@ export default function Mindmaps() {
     }
   };
 
+  // PDF Upload Handler
   const handlePdfUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -55,6 +61,7 @@ export default function Mindmaps() {
     }
   };
 
+  // Generate Mindmap from PDF
   const handleSubmit = async () => {
     if (!pdfFile) return alert("Upload a PDF first");
     if (!mindmapName.trim()) return alert("Please give this mindmap a name");
@@ -62,20 +69,20 @@ export default function Mindmaps() {
     try {
       setLoading(true);
 
-      // Extract text
+      // Extract text from PDF
       const extractedText = await extractText(pdfFile);
       setPdfText(extractedText);
 
-      // Generate mindmap structure via AI
+      // AI mindmap generation
       const aiResponse = await fetchApiResponse_Mindmap(extractedText);
 
       setNodes(aiResponse.nodes);
       setEdges(aiResponse.edges);
 
-      // Get user ID
+      // Get logged-in user
       const user_id = await getUserId();
 
-      // Save to Supabase
+      // Save mindmap to Supabase
       await saveMindmapToDB({
         name: mindmapName,
         mindmap_json: aiResponse,
@@ -93,7 +100,7 @@ export default function Mindmaps() {
   };
 
   return (
-    <div className="h-screen flex flex-col items-center justify-start pt-10 gap-6">
+    <div className="min-h-screen flex flex-col items-center justify-start pt-10 gap-6">
       <img src="Logo.png" alt="Lessonly Logo" className="h-24" />
 
       <TextType
@@ -105,7 +112,7 @@ export default function Mindmaps() {
         cursorCharacter="|"
       />
 
-      {/* Mindmap Name */}
+      {/* Mindmap Name Input */}
       <input
         type="text"
         placeholder="Enter a name for your mindmap"
@@ -122,26 +129,33 @@ export default function Mindmaps() {
         className="border h-12 w-96 rounded-sm border-gray-300 px-4 opacity-70 cursor-pointer"
       />
 
-      <div className="flex justify-around items-center">
-        {/* Generate */}
+      <div className="flex flex-row justify-around items-end w-[35vw]">
         <button
           onClick={handleSubmit}
           disabled={!pdfFile || loading}
           className={`mt-3 px-6 py-3 rounded-lg text-white font-semibold 
-          ${!pdfFile ? "bg-gray-500 cursor-not-allowed" : "bg-black hover:bg-gray-900"}
-        `}
+            ${
+              !pdfFile
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-black hover:bg-gray-900"
+            }`}
         >
           {loading ? "Processing..." : "Generate & Save Mindmap"}
         </button>
-
-        <ExportButton />
       </div>
 
-      {/* React Flow Output */}
+      {/* Mindmap Renderer */}
       {nodes && edges && (
-        <div className="h-[70vh] w-[90vw] mt-4 border rounded-lg shadow-lg bg-white">
-          <Flow nodes={nodes} edges={edges} />
-        </div>
+        <ReactFlowProvider>
+          <div
+            ref={reactFlowWrapper}
+            className="h-[70vh] w-[90vw] mt-4 border rounded-lg shadow-lg bg-white"
+          >
+            <Flow nodes={nodes} edges={edges} />
+          </div>
+
+          <ExportButton wrapperRef={reactFlowWrapper} />
+        </ReactFlowProvider>
       )}
     </div>
   );

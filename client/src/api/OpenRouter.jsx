@@ -11,6 +11,7 @@ Return ONLY plain text, NEVER JSON.
 Each bullet must contain a label and a multi-sentence explanation.
 `;
 
+  // --- UPDATED PROMPT FOR STRICTER LIMITS ---
   const outlinePrompt = `
 Extract a clean hierarchical OUTLINE with detailed explanations.
 
@@ -25,8 +26,8 @@ Root: 2–4 sentence detailed explanation
 - Child 2: 2–4 sentence explanation
 
 STRUCTURE RULES:
-- Max depth = 3
-- Max 5 children per parent
+- Max depth = 2  (Strict limit: Root -> Child -> Subchild)
+- Max 3 children per parent (Strict limit)
 - Labels must remain SHORT (2–4 words)
 - Explanations must be DETAILED paragraphs (2–4 sentences each)
 - Use ONLY:

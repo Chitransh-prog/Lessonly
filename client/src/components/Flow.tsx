@@ -4,14 +4,14 @@ import {
   FitViewOptions,
   Node,
   ReactFlow,
+  useNodesState,
+  useEdgesState,
+  Panel,
 } from "@xyflow/react";
 
 import { ZoomSlider } from "./zoom-slider";
 import { Button } from "./ui/button";
-import { Panel } from "@xyflow/react";
-
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
 import { ActionBarNodeDemo } from "./Actionbar";
 
 const nodeTypes = {
@@ -19,42 +19,59 @@ const nodeTypes = {
 };
 
 const fitViewOptions: FitViewOptions = {
-  padding: "100px",
+  padding: 0.3,
 };
 
 interface FlowProps {
   nodes: Node[];
   edges: Edge[];
+  reactFlowWrapper?: React.RefObject<HTMLDivElement>; // Fixed type
 }
 
-export default function App({ nodes, edges }: FlowProps) {
+export default function Flow({ nodes, edges, reactFlowWrapper }: FlowProps) {
   const [orientation, setOrientation] = useState<"horizontal" | "vertical">(
     "horizontal"
   );
+
+  // Internal state for React Flow to handle dragging/deleting/adding
+  const [rfNodes, setRfNodes, onNodesChange] = useNodesState(nodes);
+  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(edges);
+
+  // Sync props with internal state when AI generates a new map
+  useEffect(() => {
+    setRfNodes(nodes);
+    setRfEdges(edges);
+  }, [nodes, edges, setRfNodes, setRfEdges]);
+
   return (
-    <div className="h-full w-full flex items-center justify-center">
-      <div className="h-screen w-full">
-        <ReactFlow
-          defaultNodes={nodes}
-          defaultEdges={edges}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={fitViewOptions}
-        >
-          <Background />
-          <ZoomSlider position="top-left" orientation={orientation} />
-          <Panel position="bottom-right" />
+    <div ref={reactFlowWrapper} className="reactflow-wrapper h-full w-full">
+      <ReactFlow
+        nodes={rfNodes}
+        edges={rfEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes}
+        fitView
+        fitViewOptions={fitViewOptions}
+        minZoom={0.1} // Allow zooming out further
+      >
+        <Background />
+
+        <ZoomSlider position="top-left" orientation={orientation} />
+
+        <Panel position="bottom-right">
           <Button
             onClick={() =>
               setOrientation(
                 orientation === "horizontal" ? "vertical" : "horizontal"
               )
             }
+            className="bg-white text-black hover:bg-gray-100 border shadow-sm"
           >
             Toggle orientation
           </Button>
-        </ReactFlow>
-      </div>
+        </Panel>
+      </ReactFlow>
     </div>
   );
 }
