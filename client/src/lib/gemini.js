@@ -45,14 +45,11 @@ export async function generateEducationalContent({
     Now produce the final formatted output:
     `;
 
-
-
-
     const result = await model.generateContent(prompt);
 
     return result.response.text();
   } catch (error) {
-    console.error("🔥 Gemini API Error →", error);
+    console.error(" Gemini API Error →", error);
     throw error;
   }
 }

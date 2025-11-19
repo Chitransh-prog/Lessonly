@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import TextType from "../animations/TextType";
-import { fetchApiResponse_Mindmap } from "../api/OpenRouter";
+import { fetchApiResponse_Mindmap } from "../api/Gemini";
 import { saveMindmapToDB } from "../api/mindmap";
 import { supabase } from "../lib/supabase";
 import ExportButton from "../components/ExportButton";
@@ -8,6 +8,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { GlobalWorkerOptions } from "pdfjs-dist/build/pdf";
 import workerSrc from "pdfjs-dist/build/pdf.worker.mjs?url";
 import { ReactFlowProvider } from "@xyflow/react";
+import { generateThumbnail } from "@/utils/generateThumbnail";
 
 import Flow from "../components/Flow.tsx";
 
@@ -98,6 +99,10 @@ export default function Mindmaps() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    generateThumbnail();
+  }, [nodes, edges]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start pt-10 gap-6">
