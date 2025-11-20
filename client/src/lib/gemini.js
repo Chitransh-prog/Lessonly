@@ -69,14 +69,7 @@ export async function generateEducationalContent({
     Now produce the final formatted output:
     `;
 
-<<<<<<< HEAD
     const result = await model.generateContent(prompt);
-=======
-    const result = await model.generateContent(prompt, {
-  maxOutputTokens: 400,
-});
-
->>>>>>> 3b9ac71 (Updated the Create Page and About page contents)
 
     return result.response.text();
   } catch (error) {

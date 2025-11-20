@@ -5,9 +5,6 @@ import { generateMindmapGemini } from "../api/geminiMIndmap";
 import { saveMindmapToDB } from "../api/mindmap";
 import { supabase } from "../lib/supabase";
 
-import ExportButton from "../components/ExportButton";
-
-// PDF Imports
 import * as pdfjsLib from "pdfjs-dist";
 import { GlobalWorkerOptions } from "pdfjs-dist/build/pdf";
 import workerSrc from "pdfjs-dist/build/pdf.worker.mjs?url";
@@ -28,7 +25,28 @@ export default function Mindmaps() {
     const { data } = await supabase.auth.getUser();
     return data?.user?.id || null;
   };
+  const downloadMindmap = () => {
+  if (!nodes || !edges) return alert("Generate a mindmap first");
 
+  const data = {
+    name: mindmapName || "mindmap",
+    nodes,
+    edges,
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${mindmapName || "mindmap"}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+  // Extract text from PDF
   const extractText = async (file) => {
     try {
       const buffer = await file.arrayBuffer();
@@ -86,22 +104,6 @@ export default function Mindmaps() {
     } catch (err) {
       console.error(err);
       alert("Error generating mindmap");
-      // 2. Call AI API
-      console.log("Calling Gemini API...");
-      const aiResponse = await fetchApiResponse_Mindmap(extractedText);
-
-      console.log("AI Response received:", aiResponse);
-
-      if (!aiResponse || !aiResponse.nodes || !aiResponse.edges) {
-        throw new Error("AI returned invalid data structure.");
-      }
-
-      setFullAiResponse(aiResponse);
-      setNodes(aiResponse.nodes);
-      setEdges(aiResponse.edges);
-    } catch (error) {
-      console.error("❌ Generation Error:", error);
-      alert(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -158,25 +160,6 @@ export default function Mindmaps() {
                       Choose the file to Upload
                     </span>
                   </div>
-    <div className="min-h-screen flex flex-col items-center justify-start pt-10 gap-6 pb-20">
-      <img src="Logo.png" alt="Lessonly Logo" className="h-24" />
-
-      <TextType
-        className="text-4xl font-black"
-        text={["Upload PDF → Generate Mindmap → Save to History"]}
-        typingSpeed={200}
-        pauseDuration={1500}
-        showCursor={true}
-        cursorCharacter="|"
-      />
-
-      <input
-        type="text"
-        placeholder="Enter a name for your mindmap"
-        value={mindmapName}
-        onChange={(e) => setMindmapName(e.target.value)}
-        className="border h-12 w-96 rounded-sm border-gray-300 px-4 opacity-70"
-      />
 
                   <input
                     type="file"
@@ -196,27 +179,30 @@ export default function Mindmaps() {
                 </button>
               </form>
             </div>
-      <div className="flex flex-row justify-around items-end w-[35vw]">
-        <button
-          onClick={handleGenerate}
-          disabled={!pdfFile || loading}
-          className={`mt-3 px-6 py-3 rounded-lg text-white font-semibold 
-            ${!pdfFile ? "bg-gray-500 cursor-not-allowed" : "bg-black hover:bg-gray-900"}`}
-        >
-          {loading ? "Processing..." : "Generate Mindmap"}
-        </button>
-      </div>
 
             {/* Mindmap Flow */}
             {nodes && edges && (
+            <>
               <div className="w-full h-[60vh] mt-6 border rounded-lg shadow-lg bg-white">
                 <Flow nodes={nodes} edges={edges} />
               </div>
-            )}
+
+              {/* Download Button */}
+              <div className="w-full flex justify-center absolute top-0 right-0">
+                <button
+                  onClick={downloadMindmap}
+                  className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700"
+                >
+                  Download Mindmap
+                </button>
+              </div>
+            </>
+)}
           </div>
 
           {/* History Button */}
-          <button className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-0 right-0">
+          <button className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-16 flex items-center justify-center gap-2">
+            <img src="history.svg" className="h-4" />
             History
           </button>
         </div>
