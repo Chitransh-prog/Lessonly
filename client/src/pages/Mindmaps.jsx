@@ -8,7 +8,7 @@ import { supabase } from "../lib/supabase";
 import * as pdfjsLib from "pdfjs-dist";
 import { GlobalWorkerOptions } from "pdfjs-dist/build/pdf";
 import workerSrc from "pdfjs-dist/build/pdf.worker.mjs?url";
-
+import { useNavigate } from "react-router-dom";
 import Flow from "../components/Flow.tsx";
 
 GlobalWorkerOptions.workerSrc = workerSrc;
@@ -19,6 +19,8 @@ export default function Mindmaps() {
   const [edges, setEdges] = useState(null);
   const [loading, setLoading] = useState(false);
   const [mindmapName, setMindmapName] = useState("");
+  const navigate = useNavigate();
+
 
   // Fetch user ID
   const getUserId = async () => {
@@ -201,7 +203,7 @@ export default function Mindmaps() {
           </div>
 
           {/* History Button */}
-          <button className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-16 flex items-center justify-center gap-2">
+          <button onClick={()=> navigate("/mindmaps-history")} className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-16 flex items-center justify-center gap-2">
             <img src="history.svg" className="h-4" />
             History
           </button>

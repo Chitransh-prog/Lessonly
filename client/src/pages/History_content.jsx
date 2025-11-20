@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-export default function Mindmaps_History() {
+export default function History_content() {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
@@ -12,7 +12,7 @@ export default function Mindmaps_History() {
       if (!userId) return;
 
       const { data, error } = await supabase
-        .from("mindmap")
+        .from("content")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
@@ -25,10 +25,10 @@ export default function Mindmaps_History() {
 
   return (
     <div className="min-h-screen pt-24 pb-24 w-[90%] max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Your Mindmaps History</h1>
+      <h1 className="text-3xl font-bold mb-6">Your Generated History</h1>
 
       {items.length === 0 && (
-        <p className="text-gray-500">No mindmaps found yet.</p>
+        <p className="text-gray-500">No history found yet.</p>
       )}
 
       <div className="space-y-5">
@@ -37,20 +37,15 @@ export default function Mindmaps_History() {
             key={item.id}
             className="p-5 bg-white rounded-xl shadow border border-gray-200"
           >
-            <h2 className="text-xl font-semibold">{item.name}</h2>
+            <h2 className="text-xl font-semibold">{item.title}</h2>
 
             <p className="text-gray-400 text-sm mb-3">
               {new Date(item.created_at).toLocaleString()}
             </p>
 
-            <p className="text-gray-800 whitespace-pre-wrap mb-3">
-              {item.source_text}
+            <p className="whitespace-pre-wrap text-gray-800">
+              {item.content}
             </p>
-
-            {/* Optional – Show JSON nicely */}
-            <pre className="bg-gray-100 text-gray-700 text-sm p-3 rounded-lg overflow-x-auto">
-{JSON.stringify(item.mindmap_json, null, 2)}
-            </pre>
           </div>
         ))}
       </div>

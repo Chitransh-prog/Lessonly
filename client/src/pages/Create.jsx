@@ -3,6 +3,7 @@ import TextType from "../animations/TextType";
 import { generateEducationalContent } from "../lib/gemini";
 import { saveGeneratedContent } from "../api/content";
 import { supabase } from "../lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 export default function Create() {
   const [topic, setTopic] = useState("");
@@ -13,7 +14,7 @@ export default function Create() {
   const [language, setLanguage] = useState("");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const navigate = useNavigate();
   const getUserId = async () => {
     const { data } = await supabase.auth.getUser();
     return data?.user?.id || null;
@@ -172,7 +173,7 @@ export default function Create() {
         </div>
       )}
      {/* History Button */}
-          <button className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-16 flex items-center justify-center gap-2">
+          <button onClick={()=>navigate("/create-history")} className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-16 flex items-center justify-center gap-2">
             <img src="history.svg" className="h-4" />
             History
           </button>

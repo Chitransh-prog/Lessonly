@@ -16,6 +16,7 @@ import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Hero from "./pages/Hero";
 import Mindmap_History from "./pages/Mindmap_History";
+import History_content from "./pages/History_content";
 
 export default function App() {
   return (
@@ -42,7 +43,8 @@ export default function App() {
             <Route path="/mindmaps" element={<Mindmaps />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/mindmap-history" element={<Mindmap_History />} />
+            <Route path="/mindmaps-history" element={<Mindmap_History />} />
+            <Route path="/create-history" element={<History_content />}/>
           </Route>
         </Route>
       </Routes>
