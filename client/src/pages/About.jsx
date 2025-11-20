@@ -1,4 +1,5 @@
 import React from "react";
+import TextType from "../animations/TextType";
 
 export default function AboutPage() {
   return (
@@ -25,12 +26,18 @@ export default function AboutPage() {
             </svg>
           </div>
 
-          <h1 className=" text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#101828]">
-            About Lessonly<span className="cursor-blink">|</span>
-          </h1>
+          <TextType
+            className="text-3xl font-black mt-3"
+            text={["About Lessonly"]}
+            typingSpeed={200}
+            pauseDuration={1500}
+            showCursor={true}
+            cursorCharacter="|"
+          />
+
         </div>
         {/* info div */}
-        <section className="bg-[#101828] text-white px-4 md:px-6 lg:px-8 py-12 rounded-[20px] font-bold leading-tight [&>*]:mb-4 [&>*:last-child]:mb-0 ">
+        <section className="bg-[#101828] text-white px-4 md:px-6 lg:px-10 py-10 rounded-[20px] font-bold leading-tight [&>*]:mb-4 [&>*:last-child]:mb-0 ">
           <h2>
             Lessonly is an AI-powered web platform that automates classroom
             preparation for educators. Our mission is to reduce teacher workload
@@ -40,8 +47,8 @@ export default function AboutPage() {
           <h2>Core Functionality</h2>
           <ul className="list-disc ml-8 [&>*]:mb-1">
             <li>Content Generation: Intelligently generates lesson plans, quizzes, summaries, and flashcards from any given topic.</li>
-            <li>Technology Stack: Leverages the Gemini API for structured educational material and LLAMA APIs for quiz generation and open-source research.</li>
-            <li>Secure & Scalable: Uses Supabase Edge Functions to handle all AI calls, securely protecting API keys and ensuring easy scaling.</li>
+            <li>Technology Stack: Leverages the Gemini API for structured educational material.</li>
+            <li>Secure & Scalable: Uses Supabase Edge Functions to handle all AI calls, securely protecting API keys and ensuring easy scaling. Each User will be given 6000 token, renewed everyday.</li>
             <li>User Data: The Supabase Backend manages user authentication and secure data storage, with RLS (Row Level Security) ensuring users only access their own data.</li>
             <li>Output: Teachers can export results as PDF, DOCX, or share via a public link.</li>
           </ul>

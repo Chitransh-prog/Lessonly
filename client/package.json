@@ -27,6 +27,7 @@
     "gsap": "^3.13.0",
     "html-to-image": "^1.11.11",
     "lucide-react": "^0.553.0",
+    "markdown-to-txt": "^2.0.1",
     "motion": "^12.23.24",
     "path": "^0.12.7",
     "pdfjs-dist": "^5.4.394",

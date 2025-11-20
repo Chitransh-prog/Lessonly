@@ -1,4 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { checkUsageLimit } from "./createUsageLimit";
+import { supabase } from "./supabase";
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -17,6 +19,28 @@ export async function generateEducationalContent({
   language,
 }) {
   try {
+    // ----------------------------------------------------------------------------
+    // 🔥 STEP 1 — Get Logged-In User
+    // ----------------------------------------------------------------------------
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+
+    if (!userId) {
+      return "❌ Please login to use AI features.";
+    }
+
+    // ----------------------------------------------------------------------------
+    // 🔥 STEP 2 — Enforce Usage Limit (200 requests/month)
+    // ----------------------------------------------------------------------------
+    const allowed = await checkUsageLimit(userId, 200);
+
+    if (!allowed) {
+      return "❌ You have reached your monthly AI usage limit.";
+    }
+
+    // ----------------------------------------------------------------------------
+    // 🔥 STEP 3 — Initialize Gemini Model
+    // ----------------------------------------------------------------------------
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
     });
@@ -32,20 +56,27 @@ export async function generateEducationalContent({
     Language: ${language}
 
     STRICT RULES:
-    1. Do NOT use Markdown.
+    1. Do use Markdown.
     2. Do NOT use: #, *, -, _, ~, [, ], >.
     3. Do NOT use <b> tags.
-    4. When making text bold, wrap it like this: [BOLD]Example Text[/BOLD]
+    4. When making text bold
     5. Only output plain text.
     6. No headings like # or ###.
     7. No bullet points. Use numbered items:
-      1. Example
-      2. Example
+       1. Example
+       2. Example
 
     Now produce the final formatted output:
     `;
 
+<<<<<<< HEAD
     const result = await model.generateContent(prompt);
+=======
+    const result = await model.generateContent(prompt, {
+  maxOutputTokens: 400,
+});
+
+>>>>>>> 3b9ac71 (Updated the Create Page and About page contents)
 
     return result.response.text();
   } catch (error) {
