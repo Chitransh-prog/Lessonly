@@ -17,6 +17,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Hero from "./pages/Hero";
 import Mindmap_History from "./pages/Mindmap_History";
 import History_content from "./pages/History_content";
+import Profile_Sidebar from "./components/Profile_Sidebar";
 
 export default function App() {
   return (

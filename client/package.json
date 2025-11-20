@@ -25,7 +25,7 @@
     "flowbite": "^3.1.2",
     "framer-motion": "^12.23.24",
     "gsap": "^3.13.0",
-    "html-to-image": "^1.11.11",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^0.553.0",
     "markdown-to-txt": "^2.0.1",
     "motion": "^12.23.24",
