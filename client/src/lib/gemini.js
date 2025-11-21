@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { checkUsageLimit } from "./createUsageLimit";
 import { supabase } from "./supabase";
+import markdownToTxt from "markdown-to-txt";
+import markdownToPlain from "../utils/Makrdown";
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -70,8 +72,10 @@ export async function generateEducationalContent({
     `;
 
     const result = await model.generateContent(prompt);
+    const raw = result.response.text();
+    const response = markdownToPlain(raw);
 
-    return result.response.text();
+    return response;
   } catch (error) {
     console.error(" Gemini API Error →", error);
     throw error;
