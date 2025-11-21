@@ -18,6 +18,8 @@ import Hero from "./pages/Hero";
 import Mindmap_History from "./pages/Mindmap_History";
 import History_content from "./pages/History_content";
 import Profile_Sidebar from "./components/Profile_Sidebar";
+import ProfilePage from "./pages/Profile";
+import History from "./pages/History";
 
 export default function App() {
   return (
@@ -46,6 +48,8 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/mindmaps-history" element={<Mindmap_History />} />
             <Route path="/create-history" element={<History_content />}/>
+            <Route path="/profile" element={<ProfilePage/>}/>
+            <Route path="/history" element={<History/>}/>
           </Route>
         </Route>
       </Routes>

@@ -20,8 +20,8 @@ export default function Footer() {
               </a>
             </li>
             <li>
-              <a href="#" className="hover:underline me-4 md:me-6">
-                Privacy Policy
+              <a href="mailto:contact.lessonly@gmail.com" className="hover:underline me-4 md:me-6">
+                Mail
               </a>
             </li>
             <li>
