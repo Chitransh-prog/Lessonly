@@ -8,13 +8,20 @@ export default function GetNodesAndEdges(outline) {
 ---------------------------------------------- */
 function parseOutline(outline) {
   if (!outline || typeof outline !== "string") {
-    return { label: "Invalid Input", detail: "", children: [] };
+    console.warn("Parser received invalid outline:", outline); // Add logging
+    return {
+      label: "Invalid Input",
+      detail: "Check console logs",
+      children: [],
+    };
   }
 
   const lines = outline
     .split("\n")
     .map((l) => (l ? l.replace(/\t/g, "  ") : ""))
-    .filter((l) => l.trim().length);
+    .filter((l) => l.trim().length)
+    // Filter out AI "chatter" that doesn't start with a letter, number, or dash
+    .filter((l) => /^[a-zA-Z0-9\-]/.test(l.trim()));
 
   const getDepth = (line) => {
     const match = line.match(/^( *)-/);

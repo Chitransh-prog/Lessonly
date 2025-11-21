@@ -1,6 +1,5 @@
 import { supabase } from "../lib/supabase";
 
-// Helper: Convert Base64 Data URL to Blob
 const dataURLToBlob = (dataURL) => {
   try {
     const arr = dataURL.split(",");
@@ -8,9 +7,7 @@ const dataURLToBlob = (dataURL) => {
     const bstr = atob(arr[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
     return new Blob([u8arr], { type: mime });
   } catch (e) {
     console.error("Blob conversion failed", e);
@@ -18,10 +15,6 @@ const dataURLToBlob = (dataURL) => {
   }
 };
 
-/**
- * Uploads the generated thumbnail directly to Supabase Storage (Bucket: Lessonly)
- * Path format: {userId}/{mindmapName}.png
- */
 export async function UploadThumbnail(userId, mindmapName, thumbnailDataUrl) {
   try {
     if (!userId || !mindmapName || !thumbnailDataUrl) {
@@ -31,22 +24,22 @@ export async function UploadThumbnail(userId, mindmapName, thumbnailDataUrl) {
     const imageBlob = dataURLToBlob(thumbnailDataUrl);
     if (!imageBlob) throw new Error("Failed to process image data");
 
-    // Create clean filename: user_id/mindmap_name.png
     const cleanName = mindmapName.trim().replace(/\s+/g, "_").toLowerCase();
     const fileName = `${userId}/${cleanName}.png`;
 
-    // Upload to "Lessonly" bucket
     const { data, error } = await supabase.storage
-      .from("Lessonly")
+      .from("lessonly") // MUST be lowercase
       .upload(fileName, imageBlob, {
         contentType: "image/png",
-        upsert: true, // Overwrite if it already exists
+        upsert: true,
       });
 
     if (error) throw error;
 
-    console.log("Thumbnail uploaded successfully to:", fileName);
-    return data;
+    console.log("📁 Thumbnail uploaded to path:", data.path);
+
+    // ⭐ RETURN THE FILE PATH HERE
+    return data.path;
   } catch (error) {
     console.error("Error while uploading thumbnail: ", error);
     return null;

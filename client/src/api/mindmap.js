@@ -1,6 +1,12 @@
 import { supabase } from "../lib/supabase";
 
-export async function saveMindmapToDB({ name, mindmap_json, source_text, user_id }) {
+export async function saveMindmapToDB({
+  name,
+  mindmap_json,
+  source_text,
+  user_id,
+  thumbnail_path,
+}) {
   const { data, error } = await supabase
     .from("mindmap")
     .insert([
@@ -9,6 +15,7 @@ export async function saveMindmapToDB({ name, mindmap_json, source_text, user_id
         mindmap_json,
         source_text,
         user_id,
+        thumbnail_path,
       },
     ])
     .select("*");

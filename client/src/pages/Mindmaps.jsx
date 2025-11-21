@@ -13,6 +13,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 
 import useThumbnail from "@/utils/useThumbnail";
 import Flow from "../components/Flow.tsx";
+import { useNavigate } from "react-router-dom";
 
 // Initialize PDF Worker
 GlobalWorkerOptions.workerSrc = workerSrc;
@@ -25,7 +26,7 @@ function InnerFlowRenderer({
   edges,
   reactFlowWrapper,
   mindmapName,
-  pdfText,
+  fileName,
   fullAiResponse,
   userId,
 }) {
@@ -48,28 +49,24 @@ function InnerFlowRenderer({
 
       console.log("1. Starting Thumbnail Process...");
 
-      // Your hook already generates the PNG AND uploads it to Supabase 'Lessonly' bucket
-      // It returns the Public URL string.
-      const publicUrl = await generateThumbnail();
+      const privatePath = await generateThumbnail();
 
-      if (!publicUrl) {
+      if (!privatePath) {
         throw new Error(
           "Thumbnail generation or upload failed (returned null)."
         );
       }
 
-      console.log("2. Thumbnail uploaded to:", publicUrl);
+      console.log("2. Thumbnail uploaded to:", privatePath);
 
       console.log("3. Saving Data to Database...");
 
-      // We save the data.
-      // Note: You mentioned you don't want the URL in the 'mindmaps' table,
-      // so we only pass the data fields.
       await saveMindmapToDB({
         name: mindmapName,
         mindmap_json: fullAiResponse,
-        source_text: pdfText,
+        source_text: fileName,
         user_id: userId,
+        thumbnail_path: privatePath,
       });
 
       alert("Mindmap saved successfully!");
@@ -99,7 +96,7 @@ function InnerFlowRenderer({
           className={`px-6 py-3 rounded-lg text-white font-semibold transition-colors 
             ${isSaving ? "bg-green-700 cursor-wait" : "bg-green-600 hover:bg-green-500"}`}
         >
-          {isSaving ? "Saving & Uploading..." : "Save Mindmap to Library"}
+          {isSaving ? "Saving & Uploading..." : "Save Mindmap"}
         </button>
       </div>
     </>
@@ -117,7 +114,9 @@ export default function Mindmaps() {
   const [loading, setLoading] = useState(false);
   const [pdfText, setPdfText] = useState("");
   const [mindmapName, setMindmapName] = useState("");
+  const [fileName, setFileName] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
+  const navigate = useNavigate();
 
   const reactFlowWrapper = useRef(null);
 
@@ -153,6 +152,7 @@ export default function Mindmaps() {
       setPdfFile(file);
       setNodes(null);
       setEdges(null);
+      setFileName(file.name);
       setFullAiResponse(null);
       setPdfText("");
     }
@@ -239,6 +239,12 @@ export default function Mindmaps() {
         >
           {loading ? "Processing..." : "Generate Mindmap"}
         </button>
+        <button
+          onClick={() => navigate("/mindmaps-history")}
+          className={`mt-3 px-6 py-3 rounded-lg text-white font-semibold bg-black`}
+        >
+          Show History
+        </button>
       </div>
 
       {nodes && edges && (
@@ -248,7 +254,7 @@ export default function Mindmaps() {
             edges={edges}
             reactFlowWrapper={reactFlowWrapper}
             mindmapName={mindmapName}
-            pdfText={pdfText}
+            fileName={fileName}
             fullAiResponse={fullAiResponse}
             userId={currentUserId}
           />
