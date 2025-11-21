@@ -1,43 +1,47 @@
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabase";
 
-export default function Profile_Sidebar() {
+export default function History() {
   const navigate = useNavigate();
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    navigate("/signin");
-  }
-
   return (
-    <div className="w-56 bg-[#0B0E1A] shadow-xl rounded-xl p-4 border border-gray-200 animate-fadeIn">
-      <h3 className="text-lg font-semibold mb-3 text-gray-800">My Account</h3>
+    <div className="min-h-screen pt-28 pb-10 w-[90%] max-w-5xl mx-auto">
+      <h1 className="text-4xl font-black mb-10">Your History</h1>
 
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-        {/* Profile */}
-        <button
-          onClick={() => navigate("/profile")}
-          className="w-full text-left px-3 py-2 rounded-lg hover:bg-blue-500 transition"
-        >
-        Profile
-        </button>
+        {/* Content History Box */}
+        <div className="p-6 bg-white shadow-lg rounded-2xl border border-gray-200 flex flex-col justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold mb-2">Content History</h2>
+            <p className="text-gray-600 mb-4">
+              View all educational content you’ve generated.
+            </p>
+          </div>
 
-        {/* History Center */}
-        <button
-          onClick={() => navigate("/history")}
-          className="w-full text-left px-3 py-2 rounded-lg hover:bg-blue-500 transition"
-        >
-          History
-        </button>
+          <button
+            onClick={() => navigate("/create-history")}
+            className="mt-auto px-5 py-2 bg-black text-white rounded-xl w-max"
+          >
+            View More →
+          </button>
+        </div>
 
-        {/* Sign Out */}
-        <button
-          onClick={handleSignOut}
-          className="w-full text-left px-3 py-2 rounded-lg text-red-600 hover:bg-blue-500 transition"
-        >
-          Sign Out
-        </button>
+        {/* Mindmap History Box */}
+        <div className="p-6 bg-white shadow-lg rounded-2xl border border-gray-200 flex flex-col justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold mb-2">Mindmap History</h2>
+            <p className="text-gray-600 mb-4">
+              Explore all the mindmaps you’ve created.
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate("/mindmaps-history")}
+            className="mt-auto px-5 py-2 bg-black text-white rounded-xl w-max"
+          >
+            View More →
+          </button>
+        </div>
 
       </div>
     </div>
