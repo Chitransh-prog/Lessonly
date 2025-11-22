@@ -8,7 +8,6 @@ export default function History() {
       <h1 className="text-4xl font-black mb-10">Your History</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
         {/* Content History Box */}
         <div className="p-6 bg-white shadow-lg rounded-2xl border border-gray-200 flex flex-col justify-between">
           <div>
@@ -42,7 +41,6 @@ export default function History() {
             View More →
           </button>
         </div>
-
       </div>
     </div>
   );

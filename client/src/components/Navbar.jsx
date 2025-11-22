@@ -54,18 +54,17 @@ export default function Navbar() {
         </ul>
 
         <div className="relative group">
-        <img
-          src={avatar}
-          alt="User"
-          className="w-8 h-8 rounded-full object-cover border border-gray-700 cursor-pointer"
-        />
+          <img
+            src={avatar}
+            alt="User"
+            className="w-8 h-8 rounded-full object-cover border border-gray-700 cursor-pointer"
+          />
 
-        {/* Sidebar shown on hover */}
-        <div className="absolute right-0 mt-2 hidden group-hover:block z-50">
-          <Profile_Sidebar />
+          {/* Sidebar shown on hover */}
+          <div className="absolute right-0 mt-2 hidden group-hover:block z-50">
+            <Profile_Sidebar />
+          </div>
         </div>
-      </div>
-
       </div>
     </nav>
   );

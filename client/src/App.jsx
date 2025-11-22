@@ -20,6 +20,7 @@ import History_content from "./pages/History_content";
 import Profile_Sidebar from "./components/Profile_Sidebar";
 import ProfilePage from "./pages/Profile";
 import History from "./pages/History";
+import ViewMindmap from "./pages/ViewMindmap";
 
 export default function App() {
   return (
@@ -46,10 +47,13 @@ export default function App() {
             <Route path="/mindmaps" element={<Mindmaps />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+
+            {/* This stays alone */}
             <Route path="/mindmaps-history" element={<Mindmap_History />} />
-            <Route path="/create-history" element={<History_content />}/>
-            <Route path="/profile" element={<ProfilePage/>}/>
-            <Route path="/history" element={<History/>}/>
+            <Route path="/view/:id" element={<ViewMindmap />} />
+            <Route path="/create-history" element={<History_content />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/history" element={<History />} />
           </Route>
         </Route>
       </Routes>

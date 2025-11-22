@@ -20,7 +20,10 @@ export default function Footer() {
               </a>
             </li>
             <li>
-              <a href="mailto:contact.lessonly@gmail.com" className="hover:underline me-4 md:me-6">
+              <a
+                href="mailto:contact.lessonly@gmail.com"
+                className="hover:underline me-4 md:me-6"
+              >
                 Mail
               </a>
             </li>
@@ -35,7 +38,11 @@ export default function Footer() {
         <hr className="my-6 border-gray-700 lg:my-8" />
 
         <span className="block text-sm text-gray-500 sm:text-center">
-          © 2025 <a href="/hero" className="hover:underline">Lessonly™</a>. All Rights Reserved.
+          © 2025{" "}
+          <a href="/hero" className="hover:underline">
+            Lessonly™
+          </a>
+          . All Rights Reserved.
         </span>
       </div>
     </footer>

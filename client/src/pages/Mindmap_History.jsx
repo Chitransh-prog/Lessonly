@@ -1,10 +1,12 @@
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { getMindmapHistory } from "@/api/getMindmapHistory";
+import { useNavigate } from "react-router-dom";
 
 export default function Mindmaps_History() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Create signed URL
   const getSignedUrl = async (path) => {
@@ -69,6 +71,7 @@ export default function Mindmaps_History() {
           <div
             key={`${item.id}-${item.cleanedPath}`} // unique key fix
             className="p-5 bg-white rounded-xl shadow border"
+            onClick={() => navigate(`/view/${item.id}`)}
           >
             <img
               src={item.signedUrl}
