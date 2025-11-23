@@ -11,7 +11,6 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { marked } from "marked";
 import "highlight.js/styles/github.css";
-import { generatePDFFromMarkdown } from "@/utils/pdfGenerator";
 
 export default function Create() {
   const [topic, setTopic] = useState("");
@@ -80,18 +79,120 @@ export default function Create() {
     setLoading(false);
   };
 
+const downloadPDF = async () => {
+  const content = result;
+  const title = topic || "Generated Content";
+
+  // Create a clean iframe for rendering
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.top = "-9999px";
+  iframe.style.left = "-9999px";
+  iframe.style.width = "900px";
+  iframe.style.height = "2100px";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument;
+
+  // Write clean HTML into iframe
+  doc.open();
+  doc.write(`
+    <html>
+      <head>
+        <style>
+          body {
+            background: white;
+            color: black;
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            font-size: 14px;
+            line-height: 1.6;
+            width: 800px;
+          }
+          h1 { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+          pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            overflow-x: auto;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>${title}</h1>
+        ${marked.parse(content)}
+      </body>
+    </html>
+  `);
+  doc.close();
+
+  await new Promise(r => setTimeout(r, 300)); // wait for layout
+
+  const fullHeight = doc.body.scrollHeight;
+  const pdf = new jsPDF("p", "pt", "a4");
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  const canvasHeight = pageHeight * 2; // bigger canvas prevents cropping
+  let renderedHeight = 0;
+  let pageIndex = 0;
+
+  const logo = new Image();
+  logo.src = "/Logo.png"; // ensure correct path
+
+  logo.onload = async () => {
+    while (renderedHeight < fullHeight) {
+      const canvas = await html2canvas(doc.body, {
+        scale: 2,
+        y: renderedHeight,
+        height: canvasHeight,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+      if (pageIndex > 0) pdf.addPage();
+      pdf.setPage(pageIndex + 1);
+
+      // Logo watermark
+      const logoW = 45;
+      const logoH = (logo.height / logo.width) * logoW;
+      const x = (pageWidth - logoW) / 2;
+      const y = 10;
+
+      pdf.addImage(logo, "PNG", x, y, logoW, logoH);
+
+      // brand text
+      pdf.setFontSize(6);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text("Lessonly", pageWidth / 2, y + logoH + 10, { align: "center" });
+
+      // main page content
+      pdf.addImage(imgData, "PNG", 20, 60, pageWidth - 40, imgHeight);
+
+      renderedHeight += canvasHeight;
+      pageIndex++;
+    }
+
+    pdf.save(`${title}.pdf`);
+    document.body.removeChild(iframe);
+  };
+};
+
+
   return (
     <section className="min-h-screen w-full flex justify-center">
       <div className="w-[90%] max-w-3xl flex flex-col gap-10">
 
-        {/* ---------------- Hidden PDF Render Area ---------------- */}
         <div
           id="pdf-render-area"
           className="prose max-w-none p-10 hidden"
           dangerouslySetInnerHTML={{ __html: renderedHTML }}
         ></div>
 
-        
         <div className="bg-white p-6 rounded-xl shadow-md">
           <div className="flex flex-col items-center mb-5">
             <img src="Logo.png" alt="logo" className="h-20 w-20" />
@@ -195,41 +296,28 @@ export default function Create() {
           </form>
         </div>
 
+        {/* ------------ FINAL PREVIEW WITHOUT HEADING ------------ */}
         {result && (
           <div className="w-full mt-10 bg-white shadow-lg rounded-xl p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Generated Content</h2>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="px-4 py-2 bg-black text-white rounded-lg text-sm"
-                >
-                  {isEditing ? "Save" : "Edit"}
-                </button>
+            {/* TOP BUTTON BAR */}
+            <div className="flex justify-end items-center mb-4 gap-3">
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm"
+              >
+                {isEditing ? "Save" : "Edit"}
+              </button>
 
-                <button
-                onClick={async () => {
-                  try {
-                    await generatePDFFromMarkdown(result, {
-                      title: topic || "Generated Content",
-                      watermarkText: "LESSONLY", 
-                      watermarkImageUrl: "/mnt/data/19ad8e01-d2cb-4e1d-a5f0-8f376726b585.png",
-                      filename: `${topic || "generated-content"}.pdf`,
-                    });
-                  } catch (err) {
-                    console.error("PDF generation failed", err);
-                    alert("PDF generation failed. Check console for details.");
-                  }
-                }}
+              <button
+                onClick={downloadPDF}
                 className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm"
               >
                 Download PDF
               </button>
-
-              </div>
             </div>
 
+            {/* CONTENT PREVIEW */}
             {isEditing ? (
               <textarea
                 className="w-full h-72 border border-gray-300 rounded-lg p-3 text-gray-800"
@@ -255,10 +343,16 @@ export default function Create() {
               </div>
             )}
           </div>
-        )}<button onClick={()=>navigate("/create-history")} className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-16 flex items-center justify-center gap-2">
-            <img src="history.svg" className="h-4" />
-            History
-          </button>
+        )}
+
+        <button
+          onClick={() => navigate("/create-history")}
+          className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-16 flex items-center justify-center gap-2"
+        >
+          <img src="history.svg" className="h-4" />
+          History
+        </button>
+
       </div>
     </section>
   );
