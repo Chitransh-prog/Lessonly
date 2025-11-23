@@ -36,6 +36,37 @@ body{
   animation: slide-down 0.2s ease-out;
 }
 
+/* Completely isolate PDF area from Tailwind v4 color system */
+#pdf-render-area,
+#pdf-render-area * {
+  all: unset !important;
+  display: block !important;
+  color: black !important;
+  background: white !important;
+  font-family: Arial, sans-serif !important;
+  white-space: pre-wrap !important;
+  line-height: 1.5 !important;
+  box-sizing: border-box !important;
+}
+
+/* Allow basic formatting for headings, code, etc. */
+#pdf-render-area h1 { font-size: 24px !important; font-weight: bold !important; }
+#pdf-render-area h2 { font-size: 20px !important; font-weight: bold !important; }
+#pdf-render-area h3 { font-size: 18px !important; font-weight: bold !important; }
+
+#pdf-render-area pre {
+  background: #f4f4f4 !important;
+  padding: 10px !important;
+  border-radius: 6px !important;
+  overflow-x: auto !important;
+}
+
+#pdf-render-area code {
+  font-family: monospace !important;
+  font-size: 13px !important;
+}
+
+
 
 @theme inline {
     --radius-sm: calc(var(--radius) - 4px);

@@ -1,8 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { checkUsageLimit } from "./createUsageLimit";
 import { supabase } from "./supabase";
-import markdownToTxt from "markdown-to-txt";
-import markdownToPlain from "../utils/Makrdown";
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -21,63 +19,85 @@ export async function generateEducationalContent({
   language,
 }) {
   try {
-    // ----------------------------------------------------------------------------
-    // 🔥 STEP 1 — Get Logged-In User
-    // ----------------------------------------------------------------------------
+    // --------------------------------------------------
+    // 🔥 STEP 1 — Check authenticated user
+    // --------------------------------------------------
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData?.user?.id;
 
-    if (!userId) {
-      return "❌ Please login to use AI features.";
-    }
+    if (!userId) return "❌ Please login to use AI features.";
 
-    // ----------------------------------------------------------------------------
-    // 🔥 STEP 2 — Enforce Usage Limit (200 requests/month)
-    // ----------------------------------------------------------------------------
+    // --------------------------------------------------
+    // 🔥 STEP 2 — Usage Limit (200/month)
+    // --------------------------------------------------
     const allowed = await checkUsageLimit(userId, 200);
-
     if (!allowed) {
       return "❌ You have reached your monthly AI usage limit.";
     }
 
-    // ----------------------------------------------------------------------------
-    // 🔥 STEP 3 — Initialize Gemini Model
-    // ----------------------------------------------------------------------------
+    // --------------------------------------------------
+    // 🔥 STEP 3 — Initialize Gemini properly
+    // --------------------------------------------------
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash", // more stable than lite
     });
 
+    // --------------------------------------------------
+    // 🔥 IMPROVED PROMPT — Clean Markdown Output
+    // --------------------------------------------------
     const prompt = `
-    You are an AI that must follow strict formatting rules.
+You are an advanced educational content generator.
+Produce **clean, well-structured Markdown**, optimized for readability.
 
-    TASK:
-    Create "${type}" for the topic "${topic}".
-    Summary: ${summary || "No summary provided"}
-    Grade: ${grade}
-    Tone: ${tone}
-    Language: ${language}
+### Requirements:
 
-    STRICT RULES:
-    1. Do use Markdown.
-    2. Do NOT use: #, *, -, _, ~, [, ], >.
-    3. Do NOT use <b> tags.
-    4. When making text bold
-    5. Only output plain text.
-    6. No headings like # or ###.
-    7. No bullet points. Use numbered items:
-       1. Example
-       2. Example
+- Topic: **${topic}**
+- Summary: ${summary || "None"}
+- Content Type: **${type}**
+- Grade Level: **${grade}**
+- Tone: **${tone}**
+- Language: **${language}**
 
-    Now produce the final formatted output:
+### Formatting Rules:
+
+- Use **proper Markdown** including:
+  - Headings
+  - Paragraphs
+  - Numbered lists
+  - Sub-sections
+  - Code blocks (if needed)
+  - Tables (if helpful)
+
+- ALWAYS format nicely:
+  - Good spacing
+  - Clean sections
+  - Headers must look professional
+  - Do **not** remove Markdown symbols
+  - Do **not** flatten the Markdown
+
+- If creating a lesson plan, quiz, notes, or explanation:
+  - Use sections like:
+    - Overview
+    - Key Concepts
+    - Steps / Explanation
+    - Examples
+    - Summary
+    - Quiz (Optional)
+    - Answer Key (Optional)
+
+### Output:
+Write only **Markdown**, nothing else.
     `;
 
+    // --------------------------------------------------
+    // 🔥 STEP 4 — Generate
+    // --------------------------------------------------
     const result = await model.generateContent(prompt);
-    const raw = result.response.text();
-    const response = markdownToPlain(raw);
+    const markdown = result.response.text();
 
-    return response;
+    return markdown;
   } catch (error) {
-    console.error(" Gemini API Error →", error);
-    throw error;
+    console.error("🔥 Gemini API Error →", error);
+    return "❌ Error generating content. Please try again.";
   }
 }

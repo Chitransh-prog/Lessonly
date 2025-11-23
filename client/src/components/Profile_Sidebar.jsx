@@ -6,7 +6,7 @@ export default function Profile_Sidebar({ onClose }) {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    navigate("/signin");
+    navigate("/");
   }
 
   return (
