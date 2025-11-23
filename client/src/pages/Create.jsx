@@ -91,7 +91,7 @@ export default function Create() {
           dangerouslySetInnerHTML={{ __html: renderedHTML }}
         ></div>
 
-        {/* ---------------- FORM CARD ---------------- */}
+        
         <div className="bg-white p-6 rounded-xl shadow-md">
           <div className="flex flex-col items-center mb-5">
             <img src="Logo.png" alt="logo" className="h-20 w-20" />
@@ -195,7 +195,6 @@ export default function Create() {
           </form>
         </div>
 
-        {/* ---------------- OUTPUT SECTION ---------------- */}
         {result && (
           <div className="w-full mt-10 bg-white shadow-lg rounded-xl p-6">
             <div className="flex justify-between items-center mb-4">
@@ -214,9 +213,8 @@ export default function Create() {
                   try {
                     await generatePDFFromMarkdown(result, {
                       title: topic || "Generated Content",
-                      watermarkText: "LESSONLY", // text watermark (if you also pass watermarkImageUrl, it will try image)
-                      // Use the local uploaded watermark image path here:
-                      watermarkImageUrl: "/mnt/data/49e94a35-3abf-46dd-bb1a-a15e902a9900.png",
+                      watermarkText: "LESSONLY", 
+                      watermarkImageUrl: "/mnt/data/19ad8e01-d2cb-4e1d-a5f0-8f376726b585.png",
                       filename: `${topic || "generated-content"}.pdf`,
                     });
                   } catch (err) {
@@ -257,7 +255,10 @@ export default function Create() {
               </div>
             )}
           </div>
-        )}
+        )}<button onClick={()=>navigate("/create-history")} className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-16 flex items-center justify-center gap-2">
+            <img src="history.svg" className="h-4" />
+            History
+          </button>
       </div>
     </section>
   );
