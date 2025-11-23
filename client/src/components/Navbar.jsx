@@ -22,38 +22,38 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
-    const getAvatar = async () => {
+    async function loadAvatar() {
       try {
         const url = await fetchUserAvatar();
         setAvatar(url);
       } catch (err) {
         console.log(err);
       }
-    };
-    getAvatar();
+    }
+    loadAvatar();
   }, []);
 
-  // Close sidebar when clicking outside
+  // Close profile sidebar on outside click
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+    function handleClick(e) {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
         setSidebarOpen(false);
       }
     }
 
-    if (sidebarOpen) {
-      window.addEventListener("mousedown", handleClickOutside);
-    } else {
-      window.removeEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => window.removeEventListener("mousedown", handleClickOutside);
+    if (sidebarOpen) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, [sidebarOpen]);
 
   return (
-    <nav className="w-full flex justify-center py-4 bg-transparent">
-      <div className="w-[90%] md:w-[80%] lg:w-[70%] bg-[#0B0E1A] text-white 
-                      flex items-center justify-between px-6 py-3 rounded-2xl shadow-sm relative">
+    <nav className="w-full flex justify-center py-4 bg-transparent relative">
+      <div className="
+        w-[90%] md:w-[80%] lg:w-[70%] 
+        bg-[#0B0E1A] text-white 
+        flex items-center justify-between 
+        px-6 py-3 rounded-2xl shadow-sm  
+        relative z-50
+      ">
 
         {/* Logo */}
         <div className="flex items-center space-x-2">
@@ -61,8 +61,8 @@ export default function Navbar() {
           <span className="text-lg font-semibold">Lessonly</span>
         </div>
 
-        {/* Desktop Menu */}
-        <ul className="hidden md:flex items-center space-x-8 text-sm font-medium">
+        {/* Desktop Navigation */}
+        <ul className="hidden md:flex space-x-8 text-sm font-medium">
           {navLinks.map((link) => (
             <li key={link.name}>
               <Link
@@ -81,18 +81,20 @@ export default function Navbar() {
 
         {/* Avatar + Hamburger */}
         <div className="flex items-center gap-4">
-
-          {/* Avatar Click → Sidebar */}
+          {/* Avatar → Sidebar */}
           <div className="relative" ref={sidebarRef}>
             <img
               src={avatar}
               alt="User"
-              onClick={() => setSidebarOpen((prev) => !prev)}
-              className="w-8 h-8 rounded-full object-cover border border-gray-600 cursor-pointer"
+              onClick={() => {
+                setSidebarOpen(!sidebarOpen);
+                setMobileOpen(false);
+              }}
+              className="w-8 h-8 rounded-full border border-gray-600 cursor-pointer"
             />
 
             {sidebarOpen && (
-              <div className="absolute right-0 mt-2 z-50">
+              <div className="absolute right-0 mt-2 z-[999]">
                 <Profile_Sidebar onClose={() => setSidebarOpen(false)} />
               </div>
             )}
@@ -100,8 +102,11 @@ export default function Navbar() {
 
           {/* Hamburger */}
           <button
-            className="block md:hidden"
-            onClick={() => setMobileOpen(!mobileOpen)}
+            className="block md:hidden text-white"
+            onClick={() => {
+              setMobileOpen(!mobileOpen);
+              setSidebarOpen(false);
+            }}
           >
             {mobileOpen ? (
               <svg className="h-7 w-7" fill="none" stroke="currentColor">
@@ -118,8 +123,15 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="w-[90%] md:hidden bg-[#0B0E1A] text-white mt-2 p-4 
-                        rounded-2xl space-y-3 shadow-lg">
+        <div
+          className="
+            absolute top-[88px] 
+            w-[90%] md:hidden 
+            bg-[#0B0E1A] text-white 
+            p-4 rounded-2xl shadow-lg 
+            z-40 space-y-3
+          "
+        >
           {navLinks.map((link) => (
             <button
               key={link.name}
