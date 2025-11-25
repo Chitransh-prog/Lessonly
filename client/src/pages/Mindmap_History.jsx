@@ -56,10 +56,11 @@ export default function Mindmaps_History() {
     fetchData();
   }, []);
 
-  if (loading) return <h1>Loading...</h1>;
+  if (loading) return <h1 className="flex flex-col items-center justify-center">Loading...</h1>;
 
   return (
     <div className="min-h-screen pt-24 pb-24 w-[90%] max-w-4xl mx-auto">
+      <img onClick={()=>navigate("/mindmaps")}  src="return.png" className="h-10 w-10 bg-[#101828] text-white text-lg rounded-lg absolute top-24 left-60 flex items-center justify-center gap-2" />
       <h1 className="text-3xl font-bold mb-6">Your Mindmaps History</h1>
 
       {items.length === 0 && (

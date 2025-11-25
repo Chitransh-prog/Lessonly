@@ -160,19 +160,21 @@ export default function Mindmaps() {
         onChange={(e) => setMindmapName(e.target.value)}
         className="border h-12 w-96 rounded-sm border-gray-300 px-4 opacity-70"
       />
-
+      <div class="w-128 h-36 border-2 border-dashed border-gray-400 p-4 flex items-center justify-center text-gray-700 transition duration-300 hover:bg-blue-100 hover:border-blue-700">
+      <img src="upload.svg" className="w-10 h-10 flex flex-col items-center"/>
       <input
         type="file"
         accept="application/pdf"
         onChange={handlePdfUpload}
-        className="border h-12 w-96 rounded-sm border-gray-300 px-4 opacity-70 cursor-pointer"
+        className=""
+        placeholder="Choose file to Upload"
       />
-
+      </div>
       <div className="flex justify-around items-end w-[35vw]">
         <button
           onClick={handleGenerate}
           disabled={!pdfFile || loading}
-          className={`mt-3 px-6 py-3 rounded-lg text-white font-semibold ${
+          className={`mt-3 px-6 py-3 rounded-lg text-white font-semibold flex flex-row items-center ${
             loading || !pdfFile
               ? "bg-gray-500 cursor-not-allowed"
               : "bg-black hover:bg-gray-900"
@@ -183,11 +185,12 @@ export default function Mindmaps() {
 
         <button
           onClick={() => navigate("/mindmaps-history")}
-          className="mt-3 px-6 py-3 rounded-lg text-white font-semibold bg-black"
+          className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-60 flex items-center justify-center gap-2"
         >
-          Show History
+          <img src="history.svg" className="h-4" />
+          History
         </button>
-      </div>
+        </div>
 
       {nodes && edges && (
         <ReactFlowProvider>

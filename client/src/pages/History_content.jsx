@@ -3,9 +3,8 @@ import { supabase } from "../lib/supabase";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import hljs from "highlight.js";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-import { marked } from "marked";
+import { generatePDFFromMarkdown } from "@/utils/pdfGenerator";
+import { useNavigate } from "react-router-dom";
 
 import "highlight.js/styles/github.css";
 
@@ -13,10 +12,7 @@ export default function History_content() {
   const [items, setItems] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState("");
-
-  // -------------------------------
-  // Load user's saved content
-  // -------------------------------
+  const navigate =useNavigate();
   useEffect(() => {
     async function loadHistory() {
       const { data: userData } = await supabase.auth.getUser();
@@ -80,114 +76,22 @@ export default function History_content() {
   };
 
   // -------------------------------
-  // PDF GENERATION (Perfect Multi-Page)
+  // PDF GENERATION (Use external utility)
   // -------------------------------
-  const downloadPDF = async (content, title) => {
-    // Create isolated iframe
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.top = "-9999px";
-    iframe.style.left = "-9999px";
-    iframe.style.width = "900px";
-    iframe.style.height = "2000px";
-    document.body.appendChild(iframe);
+  // This function is greatly simplified now
+const handleDownloadPDF = (content, title) => {
+  generatePDFFromMarkdown(content, {
+    title: title,
+    filename: `${title}.pdf`,
+    watermarkText: "LESSONLY", 
+    headerText: "LESSONLY",
+    headerImageUrl: "/Logo.png", 
+  });
+};
 
-    const doc = iframe.contentDocument;
-
-    // Clean HTML for PDF snapshot
-    doc.open();
-    doc.write(`
-      <html>
-        <head>
-          <style>
-            body {
-              background: white;
-              color: black;
-              font-family: Arial, sans-serif;
-              padding: 40px;
-              font-size: 14px;
-              line-height: 1.6;
-              width: 800px;
-            }
-            h1 { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-            pre {
-              background: #f4f4f4;
-              padding: 10px;
-              border-radius: 5px;
-              font-size: 13px;
-              overflow-x: auto;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>${title}</h1>
-          ${marked.parse(content)}
-        </body>
-      </html>
-    `);
-    doc.close();
-
-    await new Promise((r) => setTimeout(r, 300)); // wait for layout
-
-    const fullHeight = doc.body.scrollHeight;
-    const pdf = new jsPDF("p", "pt", "a4");
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const canvasHeight = pageHeight * 2;
-
-    let renderedHeight = 0;
-    let pageIndex = 0;
-
-    const logo = new Image();
-    logo.src = "/Logo.png";
-
-    logo.onload = async () => {
-      while (renderedHeight < fullHeight) {
-        const canvas = await html2canvas(doc.body, {
-          scale: 2,
-          y: renderedHeight,
-          height: canvasHeight,
-          backgroundColor: "#ffffff",
-        });
-
-        const imgData = canvas.toDataURL("image/png");
-        const imgHeight = (canvas.height * pageWidth) / canvas.width;
-
-        if (pageIndex > 0) pdf.addPage();
-        pdf.setPage(pageIndex + 1);
-
-        // ----- Small Logo + Lessonly -----
-        const logoW = 45;
-        const logoH = (logo.height / logo.width) * logoW;
-        const x = (pageWidth - logoW) / 2;
-        const y = 10;
-
-        pdf.addImage(logo, "PNG", x, y, logoW, logoH);
-
-        pdf.setFontSize(7);
-        pdf.setTextColor(80, 80, 80);
-        pdf.text("LESSONLY", pageWidth / 2, y + logoH + 10, {
-          align: "center",
-        });
-
-        // ----- Page Content -----
-        pdf.addImage(imgData, "PNG", 20, 60, pageWidth - 40, imgHeight);
-
-        renderedHeight += canvasHeight;
-        pageIndex++;
-      }
-
-      pdf.save(`${title}.pdf`);
-      document.body.removeChild(iframe);
-    };
-  };
-
-  // -------------------------------
-  // RETURN UI
-  // -------------------------------
   return (
     <div className="min-h-screen pt-24 pb-24 w-[90%] max-w-4xl mx-auto">
+      <img onClick={()=>navigate("/create")}  src="return.png" className="h-10 w-10 bg-[#101828] text-white text-lg rounded-lg absolute top-24 left-60 flex items-center justify-center gap-2" />
       <h1 className="text-3xl font-bold mb-6">Your Generated History</h1>
 
       {items.length === 0 && (
@@ -213,7 +117,7 @@ export default function History_content() {
                 </button>
 
                 <button
-                  onClick={() => downloadPDF(item.content, item.title)}
+                  onClick={() => handleDownloadPDF(item.content, item.title)}
                   className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs"
                 >
                   PDF

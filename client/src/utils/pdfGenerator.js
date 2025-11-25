@@ -1,4 +1,3 @@
-// src/utils/pdfGenerator.js
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { marked } from "marked";
@@ -9,18 +8,41 @@ import "highlight.js/styles/github.css";
  * generatePDFFromMarkdown
  * @param {string} markdown - markdown content
  * @param {object} options
- *   - title: document title (string)
- *   - watermarkText: text watermark (string)
- *   - watermarkImageUrl: optional image watermark URL (string) - local path OK
- *   - filename: output filename
+ * - title: document title (string)
+ * - watermarkText: text watermark (string) - for central, rotated mark
+ * - headerText: text for the fixed header (e.g., 'LESSONLY')
+ * - headerImageUrl: image URL for the fixed header (e.g., '/Logo.png')
+ * - filename: output filename
  */
 export async function generatePDFFromMarkdown(markdown, options = {}) {
   const {
     title = "Document",
     watermarkText = "LESSONLY",
-    watermarkImageUrl = null, // pass '/mnt/data/yourfile.png' here (we'll use path you supplied)
+    headerText = "LESSONLY", // New parameter for fixed header text
+    headerImageUrl = null,   // New parameter for fixed header image
     filename = "generated-document.pdf",
   } = options;
+
+  // --- Preload Header Image (If provided) ---
+  let logoImage = null;
+  let logoYOffset = 0; // To track where the logo stopped drawing
+  
+  if (headerImageUrl) {
+    logoImage = new Image();
+    logoImage.src = headerImageUrl;
+    try {
+        await new Promise((resolve, reject) => {
+            logoImage.onload = resolve;
+            logoImage.onerror = reject;
+            // Fallback for immediate loading
+            if (logoImage.complete) resolve();
+        });
+    } catch (e) {
+        console.error("Could not load header image:", e);
+        logoImage = null;
+    }
+  }
+
 
   // 1) Build a clean HTML snapshot (print-safe, no Tailwind)
   const html = marked.parse(markdown || "");
@@ -43,7 +65,8 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
           .pdf-container {
             box-sizing: border-box;
             width: 794px; /* A4 px @ 96dpi ≈ 794 x 1123; we'll scale in canvas */
-            padding: 48px;
+            /* Increase top padding to account for the fixed header */
+            padding: 70px 48px 48px 48px; 
           }
           h1 { font-size: 26px; margin: 0 0 12px 0; }
           h2 { font-size: 20px; margin: 14px 0; }
@@ -74,8 +97,7 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
           ${html}
         </div>
 
-        <!-- include a small script to call highlight.js (we'll also call it on the client side before canvas) -->
-      </body>
+        </body>
     </html>
   `;
 
@@ -144,36 +166,69 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
 
   // target width in pts we want to fit into page width minus margins
   const marginPt = 40;
+  // Increase top margin slightly to avoid header overlap
+  const topMarginPt = 65; 
   const printableWidthPt = pageWidthPt - marginPt * 2;
+  const printableHeightPt = pageHeightPt - topMarginPt - marginPt;
+
   // compute scale factor to fit canvas width to printableWidthPt
   const canvasWidthPt = pxToPt(canvasWidth);
   const scaleFactor = printableWidthPt / canvasWidthPt;
   const renderedHeightPt = pxToPt(canvasHeight) * scaleFactor;
 
   // We'll cut by page height in pts
-  const totalPages = Math.ceil(renderedHeightPt / (pageHeightPt - marginPt * 2));
+  const totalPages = Math.ceil(renderedHeightPt / printableHeightPt);
 
-  // Draw watermark function (centered, rotated)
-  function drawWatermark(pageIndex) {
-    if (watermarkImageUrl) {
-      // draw image centered with opacity
-      // we add it before content so it's behind? jsPDF draws in order; draw watermark first, then image; so draw watermark before adding image pages
-      // but we will draw watermark after (on each page) at lower opacity
-    } else {
-      pdf.setFontSize(60);
-      pdf.setTextColor(230, 230, 230);
-      pdf.setGState && pdf.setGState({ opacity: 0.12 });
-      const txt = watermarkText;
-      const textWidth = pdf.getTextWidth(txt);
-      // center coordinates
-      const x = pageWidthPt / 2 - textWidth / 2;
-      const y = pageHeightPt / 2 + 30;
+
+  // --- Helper Functions for Drawing ---
+
+  // Draw Central Watermark (translucent, rotated)
+  function drawCentralWatermark() {
+      const watermarkAngle = 45; 
+      const watermarkOpacity = 0.12; // Use subtle opacity
+
       pdf.saveGraphicsState && pdf.saveGraphicsState();
-      pdf.setGState && pdf.setGState({ opacity: 0.12 }); // older jsPDF may not support setGState
-      pdf.text(txt, x, y, { angle: 45 });
+      
+      pdf.setAlpha && pdf.setAlpha(watermarkOpacity);
+      pdf.setFontSize(60);
+      pdf.setTextColor(150, 150, 150); 
+
+      const xCenter = pageWidthPt / 2;
+      const yCenter = pageHeightPt / 2;
+
+      pdf.text(watermarkText, xCenter, yCenter, { 
+        angle: watermarkAngle, 
+        align: "center" 
+      });
+
       pdf.restoreGraphicsState && pdf.restoreGraphicsState();
-    }
   }
+  
+  // Draw Fixed Header (logo and text)
+  function drawFixedHeader() {
+      const yLogo = 10;
+      let currentY = yLogo;
+
+      // 1. Draw Logo (if available)
+      if (logoImage) {
+        const logoW = 40;
+        const logoH = (logoImage.height / logoImage.width) * logoW;
+        const xLogo = (pageWidthPt - logoW) / 2;
+
+        pdf.addImage(logoImage, "PNG", xLogo, currentY, logoW, logoH);
+        currentY += logoH;
+      }
+      
+      // 2. Draw Brand Text below logo or at the top (ALWAYS runs)
+      if (headerText) {
+          pdf.setFontSize(7);
+          pdf.setTextColor(80, 80, 80);
+          pdf.text(headerText, pageWidthPt / 2, currentY + 8, { 
+            align: "center" 
+          });
+      }
+  }
+
 
   // helper to get canvas chunk as image for a page
   for (let page = 0; page < totalPages; page++) {
@@ -182,7 +237,7 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
     const pageCanvasCtx = pageCanvas.getContext("2d");
 
     // compute source rectangle in original canvas px
-    const pageHeightPx = ((pageHeightPt - marginPt * 2) * (96 / 72)) / scaleFactor; // convert pts back to px and account scaleFactor
+    const pageHeightPx = (printableHeightPt * (96 / 72)) / scaleFactor;
     pageCanvas.width = canvas.width;
     pageCanvas.height = Math.min(pageHeightPx, canvas.height - page * pageHeightPx);
 
@@ -208,37 +263,20 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
     // Add page (first page uses existing page, subsequent pages add)
     if (page > 0) pdf.addPage();
 
-    // draw watermark image or text first (so appears behind), for better control draw image then content with reduced opacity:
-    if (watermarkImageUrl) {
-      try {
-        // We can't directly set opacity for images in jsPDF older versions; as a workaround draw after content with low opacity
-        // For now we'll put watermark text centered if image fails
-        // (A robust solution would preload image and add with addImage)
-        const img = new Image();
-        img.src = watermarkImageUrl;
-        await imageLoad(img);
-        // image width/height in pts (fit)
-        const iw = Math.min(300, pageWidthPt * 0.8);
-        const ih = (img.height / img.width) * iw;
-        const ix = (pageWidthPt - iw) / 2;
-        const iy = (pageHeightPt - ih) / 2;
-        pdf.addImage(img, "PNG", ix, iy, iw, ih, undefined, "NONE");
-      } catch (e) {
-        // fallback: text watermark
-        drawWatermark(page);
-      }
-    } else {
-      drawWatermark(page);
-    }
+    // 1. Draw Central Watermark (behind content)
+    drawCentralWatermark();
 
-    // Now add image (content) over the watermark
+    // 2. Add page content image
     // calculate image dimensions in points to fit printable width
     const imgWidthPt = printableWidthPt;
     const imgHeightPt = (pxToPt(pageCanvas.height) * scaleFactor);
     const x = marginPt;
-    const y = marginPt;
+    const y = topMarginPt; // Start content lower to reserve space for header
 
     pdf.addImage(imgData, "PNG", x, y, imgWidthPt, imgHeightPt, undefined, "FAST");
+    
+    // 3. Draw Fixed Header (on top of content)
+    drawFixedHeader();
   }
 
   // cleanup
@@ -247,7 +285,7 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
   // Save the PDF
   pdf.save(filename);
 
-  // Utility helpers
+  // Utility helpers (omitted for brevity, assume they are still there)
   function escapeHtml(str) {
     if (!str) return "";
     return String(str)
@@ -288,14 +326,6 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
       });
       // fallback timeout
       setTimeout(resolve, 1000);
-    });
-  }
-
-  function imageLoad(img) {
-    return new Promise((res, rej) => {
-      if (img.complete) return res();
-      img.onload = () => res();
-      img.onerror = () => rej();
     });
   }
 }
