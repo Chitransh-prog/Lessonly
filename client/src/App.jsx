@@ -4,59 +4,64 @@ import {
   Route,
   Outlet,
 } from "react-router-dom";
-import Home from "./pages/Home";
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
-import Mindmaps from "./pages/Mindmaps";
-import Contact from "./pages/Contact";
-import Create from "./pages/Create";
-import About from "./pages/About";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Hero from "./pages/Hero";
-import Mindmap_History from "./pages/Mindmap_History";
-import History_content from "./pages/History_content";
-import Profile_Sidebar from "./components/Profile_Sidebar";
-import ProfilePage from "./pages/Profile";
-import History from "./pages/History";
-import ViewMindmap from "./pages/ViewMindmap";
+import { Suspense, lazy } from "react";
+
+// Lazy pages
+const Home = lazy(() => import("./pages/Home"));
+const SignIn = lazy(() => import("./pages/SignIn"));
+const SignUp = lazy(() => import("./pages/SignUp"));
+const Mindmaps = lazy(() => import("./pages/Mindmaps"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Create = lazy(() => import("./pages/Create"));
+const About = lazy(() => import("./pages/About"));
+const Navbar = lazy(() => import("./components/Navbar"));
+const Footer = lazy(() => import("./components/Footer"));
+const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
+const Hero = lazy(() => import("./pages/Hero"));
+const Mindmap_History = lazy(() => import("./pages/Mindmap_History"));
+const History_content = lazy(() => import("./pages/History_content"));
+const ProfilePage = lazy(() => import("./pages/Profile"));
+const History = lazy(() => import("./pages/History"));
+const ViewMindmap = lazy(() => import("./pages/ViewMindmap"));
 
 export default function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/signup" element={<SignUp />} />
+      {/* 👇 WRAP ALL ROUTES IN Suspense */}
+      <Suspense fallback={<div className="text-center p-10">Loading...</div>}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
 
-        <Route element={<ProtectedRoute />}>
-          <Route
-            element={
-              <>
-                <Navbar />
-                <div className="min-h-screen">
-                  <Outlet />
-                </div>
-                <Footer />
-              </>
-            }
-          >
-            <Route path="/hero" element={<Hero />} />
-            <Route path="/create" element={<Create />} />
-            <Route path="/mindmaps" element={<Mindmaps />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
+          <Route element={<ProtectedRoute />}>
+            <Route
+              element={
+                <>
+                  <Navbar />
+                  <div className="min-h-screen">
+                    <Outlet />
+                  </div>
+                  <Footer />
+                </>
+              }
+            >
+              <Route path="/hero" element={<Hero />} />
+              <Route path="/create" element={<Create />} />
+              <Route path="/mindmaps" element={<Mindmaps />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
 
-            {/* This stays alone */}
-            <Route path="/mindmaps-history" element={<Mindmap_History />} />
-            <Route path="/view/:id" element={<ViewMindmap />} />
-            <Route path="/create-history" element={<History_content />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/history" element={<History />} />
+              {/* Non-nested pages */}
+              <Route path="/mindmaps-history" element={<Mindmap_History />} />
+              <Route path="/view/:id" element={<ViewMindmap />} />
+              <Route path="/create-history" element={<History_content />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/history" element={<History />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
+        </Routes>
+      </Suspense>
     </Router>
   );
 }

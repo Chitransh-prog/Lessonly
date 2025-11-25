@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "test": "deno test --allow-all"
+  },
+  "imports": {
+    "@google/generative-ai": "npm:@google/generative-ai@^0.24.1",
+    "@std/http" : "jsr:@supabase/functions-js"
+  }
+}

@@ -1,44 +1,31 @@
 import { useState, useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { fetchCheckAuth } from "../api/AuthCall";
 
-const ProtectedRoute = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(null); // null means checking, true/false means result
+export default function ProtectedRoute() {
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const session = await fetchCheckAuth();
-      if (!session) {
-        setIsAuthenticated(false);
-      }
+    // Initial check
+    const session = supabase.auth.getSession().then(({ data }) => {
+      setIsAuthenticated(!!data.session);
+    });
+
+    // Auth listener
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
-    };
-
-    checkAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setIsAuthenticated(!!session);
-      }
-    );
+    });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
   if (isAuthenticated === null) {
-    return (
-      <div className="text-center p-10">Loading authentication status...</div>
-    );
+    return <div className="text-center p-10">Loading authentication...</div>;
   }
 
-  if (isAuthenticated) {
-    return <Outlet />;
-  }
-
-  return <Navigate to="/signin" replace />;
-};
-
-export default ProtectedRoute;
+  return isAuthenticated ? <Outlet /> : <Navigate to="/signin" replace />;
+}
