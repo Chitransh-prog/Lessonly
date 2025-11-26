@@ -4,11 +4,9 @@ import { saveMindmapToDB } from "../api/saveMindmap.js";
 import { supabase } from "../lib/supabase";
 import ExportButton from "../components/ExportButton";
 import { ReactFlowProvider } from "@xyflow/react";
-
 import useThumbnail from "@/utils/useThumbnail";
 import Flow from "../components/Flow.tsx";
 import { useNavigate } from "react-router-dom";
-
 import { generateMindmapFromPdf } from "../api/fetchNodesAndEdges.tsx";
 import { extractPdfText } from "@/utils/extractPdfText";
 
@@ -54,13 +52,14 @@ function InnerFlowRenderer({
     <>
       <div
         ref={reactFlowWrapper}
-        className="h-[70vh] w-[90vw] mt-4 border rounded-lg shadow-lg bg-white relative"
+        className="h-[70vh] w-[90vw] mt-6 border rounded-xl shadow-lg bg-white"
       >
         <Flow nodes={nodes} edges={edges} />
       </div>
 
-      <div className="flex gap-4 mt-4 mb-10">
+      <div className="flex gap-4 mt-5 mb-10">
         <ExportButton wrapperRef={reactFlowWrapper} />
+
         <button
           onClick={handleSaveToLibrary}
           disabled={isSaving}
@@ -104,8 +103,6 @@ export default function Mindmaps() {
     setEdges(null);
     setFullAiResponse(null);
     setFileName(file.name);
-
-    console.log("PDF selected:", file.name);
   };
 
   const handleGenerate = async () => {
@@ -114,16 +111,13 @@ export default function Mindmaps() {
 
     try {
       setLoading(true);
-      console.log("Extracting text from PDF…");
 
       const uid = await getUserId();
       setCurrentUserId(uid);
 
       const extractedText = await extractPdfText(pdfFile);
-      console.log("Extracted text length:", extractedText.length);
 
       const aiResponse = await generateMindmapFromPdf(extractedText);
-
       if (!aiResponse?.nodes || !aiResponse?.edges) {
         throw new Error("Invalid AI response");
       }
@@ -131,8 +125,6 @@ export default function Mindmaps() {
       setFullAiResponse(aiResponse);
       setNodes(aiResponse.nodes);
       setEdges(aiResponse.edges);
-
-      console.log("Mindmap generated!");
     } catch (error) {
       alert(error.message);
     } finally {
@@ -141,7 +133,8 @@ export default function Mindmaps() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center pt-10 gap-6 pb-20">
+    <div className="min-h-screen flex flex-col items-center pt-12 gap-6 pb-20">
+      
       <img src="Logo.png" alt="Lessonly" className="h-24" />
 
       <TextType
@@ -158,23 +151,29 @@ export default function Mindmaps() {
         placeholder="Name your mindmap"
         value={mindmapName}
         onChange={(e) => setMindmapName(e.target.value)}
-        className="border h-12 w-96 rounded-sm border-gray-300 px-4 opacity-70"
+        className="border h-12 w-80 md:w-96 rounded-xl border-gray-300 px-4"
       />
-      <div class="w-128 h-36 border-2 border-dashed border-gray-400 p-4 flex items-center justify-center text-gray-700 transition duration-300 hover:bg-blue-100 hover:border-blue-700">
-      <img src="upload.svg" className="w-10 h-10 flex flex-col items-center"/>
-      <input
-        type="file"
-        accept="application/pdf"
-        onChange={handlePdfUpload}
-        className=""
-        placeholder="Choose file to Upload"
-      />
-      </div>
-      <div className="flex justify-around items-end w-[35vw]">
+
+      <label className="w-80 md:w-[30rem] h-36 border-2 border-dashed border-gray-400 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 transition">
+        <img src="upload.svg" className="w-10 h-10 opacity-70" />
+        
+        <p className="text-gray-600 mt-2 text-sm">
+          {pdfFile ? pdfFile.name : "Click to upload PDF"}
+        </p>
+
+        <input
+          type="file"
+          accept="application/pdf"
+          onChange={handlePdfUpload}
+          className="hidden"
+        />
+      </label>
+
+      <div className="flex items-center gap-4 mt-2">
         <button
           onClick={handleGenerate}
           disabled={!pdfFile || loading}
-          className={`mt-3 px-6 py-3 rounded-lg text-white font-semibold flex flex-row items-center ${
+          className={`px-6 py-3 rounded-lg text-white font-semibold ${
             loading || !pdfFile
               ? "bg-gray-500 cursor-not-allowed"
               : "bg-black hover:bg-gray-900"
@@ -185,12 +184,12 @@ export default function Mindmaps() {
 
         <button
           onClick={() => navigate("/mindmaps-history")}
-          className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-60 flex items-center justify-center gap-2"
+          className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-10 flex items-center justify-center gap-2"
         >
           <img src="history.svg" className="h-4" />
           History
         </button>
-        </div>
+      </div>
 
       {nodes && edges && (
         <ReactFlowProvider>

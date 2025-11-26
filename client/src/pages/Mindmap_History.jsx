@@ -25,9 +25,7 @@ export default function Mindmaps_History() {
   const cleanPath = (thumbnailPath) => {
     if (!thumbnailPath) return null;
 
-    // Convert:
-    // https://xyz.supabase.co/storage/v1/object/public/Lessonly/thumb.png
-    // ---> Lessonly/thumb.png
+  
     return thumbnailPath.replace(/^https?:\/\/.*\/object\/public\//, "");
   };
 
@@ -60,7 +58,7 @@ export default function Mindmaps_History() {
 
   return (
     <div className="min-h-screen pt-24 pb-24 w-[90%] max-w-4xl mx-auto">
-      <img onClick={()=>navigate("/mindmaps")}  src="return.png" className="h-10 w-10 bg-[#101828] text-white text-lg rounded-lg absolute top-24 left-60 flex items-center justify-center gap-2" />
+      <img onClick={()=>navigate("/mindmaps")}  src="return.png" className="h-10 w-10 bg-[#101828] text-white text-lg rounded-lg absolute top-24 left-10 flex items-center justify-center gap-2" />
       <h1 className="text-3xl font-bold mb-6">Your Mindmaps History</h1>
 
       {items.length === 0 && (

@@ -37,17 +37,13 @@ export default function History_content() {
     hljs.highlightAll();
   }, [items, editingId]);
 
-  // -------------------------------
-  // Start Editing
-  // -------------------------------
+
   const startEdit = (item) => {
     setEditingId(item.id);
     setEditContent(item.content);
   };
 
-  // -------------------------------
-  // Save Edited Content
-  // -------------------------------
+ 
   const saveEdit = async (itemId) => {
     const { error } = await supabase
       .from("content")
@@ -62,9 +58,7 @@ export default function History_content() {
     }
   };
 
-  // -------------------------------
-  // Delete Content
-  // -------------------------------
+ 
   const deleteItem = async (itemId) => {
     if (!confirm("Are you sure you want to delete this entry?")) return;
 
@@ -75,9 +69,7 @@ export default function History_content() {
     }
   };
 
-  // -------------------------------
-  // PDF GENERATION (Use external utility)
-  // -------------------------------
+
   // This function is greatly simplified now
 const handleDownloadPDF = (content, title) => {
   generatePDFFromMarkdown(content, {
@@ -91,7 +83,7 @@ const handleDownloadPDF = (content, title) => {
 
   return (
     <div className="min-h-screen pt-24 pb-24 w-[90%] max-w-4xl mx-auto">
-      <img onClick={()=>navigate("/create")}  src="return.png" className="h-10 w-10 bg-[#101828] text-white text-lg rounded-lg absolute top-24 left-60 flex items-center justify-center gap-2" />
+      <img onClick={()=>navigate("/create")}  src="return.png" className="h-10 w-10 bg-[#101828] text-white text-lg rounded-lg absolute top-24 left-10 flex items-center justify-center gap-2" />
       <h1 className="text-3xl font-bold mb-6">Your Generated History</h1>
 
       {items.length === 0 && (

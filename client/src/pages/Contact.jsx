@@ -11,7 +11,7 @@ export default function ContactPage() {
   const failure = () => toast("Something went wrong, try again 🙃", { theme: "dark" });
 
   const handleSubscribe = async () => {
-    if (!email) {
+    if (!email.trim()) {
       toast("Please enter a valid email", { theme: "dark" });
       return;
     }
@@ -28,10 +28,9 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 antialiased flex flex-col ">
+    <div className="min-h-screen bg-white text-gray-900 antialiased flex flex-col">
       <main className="w-[90%] md:w-[80%] lg:w-[70%] mx-auto px-4 sm:px-6 md:px-8 mt-8 md:mt-12 text-center">
 
-        {/* Logo + Heading */}
         <div className="flex flex-col items-center">
           <img src="Logo.png" alt="logo" className="h-20 w-20" />
 
@@ -40,13 +39,12 @@ export default function ContactPage() {
             text={["Get In Touch"]}
             typingSpeed={200}
             pauseDuration={1500}
-            showCursor={true}
+            showCursor
             cursorCharacter="|"
           />
         </div>
 
-        {/* NEWSLETTER SECTION */}
-        <section className="mt-[20px] mb-[50px] sm:mt-12 bg-[#101828] text-white rounded-2xl p-6 sm:p-10 md:p-12 shadow-lg">
+        <section className="mt-8 sm:mt-12 bg-[#101828] text-white rounded-2xl p-6 sm:p-10 md:p-12 shadow-lg">
           <div className="max-w-3xl mx-auto text-left">
 
             <h2 className="text-base sm:text-lg md:text-xl font-semibold leading-relaxed">
@@ -70,11 +68,11 @@ export default function ContactPage() {
               </li>
             </ul>
 
-            {/* INPUT + BUTTON */}
+            {/* Input + Button */}
             <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center gap-3 mx-2">
 
               <div className="w-full sm:flex-1">
-                <label className="w-full bg-gray-200 rounded-[15px] px-3 py-2 sm:py-3 flex items-center">
+                <div className="w-full bg-gray-200 rounded-[15px] px-3 py-2 sm:py-3 flex items-center">
                   <input
                     id="email"
                     name="email"
@@ -85,21 +83,23 @@ export default function ContactPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-transparent placeholder-gray-500 outline-none w-full text-sm sm:text-base text-black font-medium"
                   />
-                </label>
+                </div>
               </div>
 
               <button
+                type="button"
                 onClick={handleSubscribe}
                 className="w-full sm:w-auto rounded-[15px] px-6 py-2.5 sm:py-3 bg-[#2b82ff] hover:bg-[#206edf] transition text-white font-semibold shadow-md"
               >
                 Subscribe
               </button>
+
             </div>
 
-            <ToastContainer />
+           
 
             <p className="mt-4 sm:mt-6 text-xs sm:text-sm text-gray-400">
-              By subscribing, you agree with Lessonly Terms of Service and Privacy Policy.
+              By subscribing, you agree with Lessonly’s Terms of Service and Privacy Policy.
             </p>
 
           </div>

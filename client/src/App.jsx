@@ -5,6 +5,8 @@ import {
   Outlet,
 } from "react-router-dom";
 import { Suspense, lazy } from "react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Lazy pages
 const Home = lazy(() => import("./pages/Home"));
@@ -27,7 +29,9 @@ const ViewMindmap = lazy(() => import("./pages/ViewMindmap"));
 export default function App() {
   return (
     <Router>
-      {/* 👇 WRAP ALL ROUTES IN Suspense */}
+      
+      <ToastContainer position="top-right" theme="dark" />
+
       <Suspense fallback={<div className="text-center p-10">Loading...</div>}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -52,7 +56,6 @@ export default function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
 
-              {/* Non-nested pages */}
               <Route path="/mindmaps-history" element={<Mindmap_History />} />
               <Route path="/view/:id" element={<ViewMindmap />} />
               <Route path="/create-history" element={<History_content />} />
