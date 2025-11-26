@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { fetchUserAvatar } from "../api/UserCall";
 import Profile_Sidebar from "./Profile_Sidebar";
+import { supabase } from "@/lib/supabase";
 
 export default function Navbar() {
   const location = useLocation();
@@ -22,15 +23,15 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
-    async function loadAvatar() {
-      try {
-        const url = await fetchUserAvatar();
-        setAvatar(url);
-      } catch (err) {
-        console.log(err);
-      }
-    }
-    loadAvatar();
+    const load = async () => {
+      const avatar = await fetchUserAvatar();
+      setAvatar(avatar);
+    };
+
+    load();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(() => load());
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   // Close profile sidebar on outside click
@@ -47,14 +48,15 @@ export default function Navbar() {
 
   return (
     <nav className="w-full flex justify-center py-4 bg-transparent relative">
-      <div className="
+      <div
+        className="
         w-[90%] md:w-[80%] lg:w-[70%] 
         bg-[#0B0E1A] text-white 
         flex items-center justify-between 
         px-6 py-3 rounded-2xl shadow-sm  
         relative z-50
-      ">
-
+      "
+      >
         {/* Logo */}
         <div className="flex items-center space-x-2">
           <img src="/Logo.png" alt="Lessonly Logo" className="h-7 w-7" />

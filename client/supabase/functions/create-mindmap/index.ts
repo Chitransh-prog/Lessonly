@@ -14,8 +14,6 @@ interface OutlineNode {
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
-console.log("Gemini key: ", GEMINI_API_KEY);
-
 if (!GEMINI_API_KEY) {
   console.error("❌ Missing GEMINI_API_KEY");
 }

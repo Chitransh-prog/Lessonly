@@ -1,31 +1,32 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
 export default function ProtectedRoute() {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [session, setSession] = useState(undefined); // undefined = loading
 
   useEffect(() => {
-    // Initial check
-    const session = supabase.auth.getSession().then(({ data }) => {
-      setIsAuthenticated(!!data.session);
+    // 1️⃣ Get current session instantly
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
     });
 
-    // Auth listener
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
+    // 2️⃣ Listen for changes (login/logout)
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+      }
+    );
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, []);
 
-  if (isAuthenticated === null) {
-    return <div className="text-center p-10">Loading authentication...</div>;
-  }
+  // Still restoring session → show nothing (NO layout flicker)
+  if (session === undefined) return null;
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/signin" replace />;
+  // No session → redirect
+  if (!session) return <Navigate to="/signin" replace />;
+
+  // Authenticated
+  return <Outlet />;
 }

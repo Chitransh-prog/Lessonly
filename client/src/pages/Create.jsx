@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import TextType from "../animations/TextType";
-import { generateEducationalContent } from "../lib/gemini";
+import { generateEducationalContent } from "../api/gemini";
 import { saveGeneratedContent } from "../api/content";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,30 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { marked } from "marked";
 import "highlight.js/styles/github.css";
+
+// ❗ Remove raw HTML completely (to avoid hydration errors)
+function sanitizeToMarkdown(input) {
+  if (!input) return "";
+
+  // AI returns JSON → convert to string
+  let text =
+    typeof input === "string"
+      ? input
+      : input?.response ||
+        input?.content ||
+        input?.markdown ||
+        input?.text ||
+        JSON.stringify(input, null, 2);
+
+  // Remove all inline HTML tags
+  text = text.replace(/<[^>]*>/g, "");
+
+  // Fix broken HTML escaping from AI
+  text = text.replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+
+  // Normalize spacing
+  return text.replace(/\n{3,}/g, "\n\n").trim();
+}
 
 export default function Create() {
   const [topic, setTopic] = useState("");
@@ -26,7 +50,7 @@ export default function Create() {
 
   const navigate = useNavigate();
 
-  // Convert Markdown → HTML for PDF rendering
+  // Convert Markdown → HTML (for PDF)
   useEffect(() => {
     if (result) {
       const html = marked.parse(result);
@@ -34,7 +58,7 @@ export default function Create() {
     }
   }, [result]);
 
-  // Highlight code blocks
+  // Apply highlight.js
   useEffect(() => {
     document.querySelectorAll("pre code").forEach((block) => {
       hljs.highlightElement(block);
@@ -60,13 +84,14 @@ export default function Create() {
         language,
       });
 
-      setResult(data);
+      const cleaned = sanitizeToMarkdown(data);
+      setResult(cleaned);
 
       const user_id = await getUserId();
       await saveGeneratedContent({
         title: topic,
         description: summary || "",
-        content: data,
+        content: cleaned,
         user_id,
       });
 
@@ -79,114 +104,109 @@ export default function Create() {
     setLoading(false);
   };
 
-const downloadPDF = async () => {
-  const content = result;
-  const title = topic || "Generated Content";
+  const downloadPDF = async () => {
+    const content = result;
+    const title = topic || "Generated Content";
 
-  // Create a clean iframe for rendering
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.top = "-9999px";
-  iframe.style.left = "-9999px";
-  iframe.style.width = "900px";
-  iframe.style.height = "2100px";
-  document.body.appendChild(iframe);
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.top = "-9999px";
+    iframe.style.left = "-9999px";
+    iframe.style.width = "900px";
+    iframe.style.height = "2100px";
+    document.body.appendChild(iframe);
 
-  const doc = iframe.contentDocument;
+    const doc = iframe.contentDocument;
 
-  // Write clean HTML into iframe
-  doc.open();
-  doc.write(`
-    <html>
-      <head>
-        <style>
-          body {
-            background: white;
-            color: black;
-            font-family: Arial, sans-serif;
-            padding: 40px;
-            font-size: 14px;
-            line-height: 1.6;
-            width: 800px;
-          }
-          h1 { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-          pre {
-            background: #f4f4f4;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 13px;
-            overflow-x: auto;
-          }
-        </style>
-      </head>
-      <body>
-        <h1>${title}</h1>
-        ${marked.parse(content)}
-      </body>
-    </html>
-  `);
-  doc.close();
+    doc.open();
+    doc.write(`
+      <html>
+        <head>
+          <style>
+            body {
+              background: white;
+              color: black;
+              font-family: Arial, sans-serif;
+              padding: 40px;
+              font-size: 14px;
+              line-height: 1.6;
+              width: 800px;
+            }
+            h1 { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+            pre {
+              background: #f4f4f4;
+              padding: 10px;
+              border-radius: 5px;
+              font-size: 13px;
+              overflow-x: auto;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          ${marked.parse(content)}
+        </body>
+      </html>
+    `);
+    doc.close();
 
-  await new Promise(r => setTimeout(r, 300)); // wait for layout
+    await new Promise((r) => setTimeout(r, 300));
 
-  const fullHeight = doc.body.scrollHeight;
-  const pdf = new jsPDF("p", "pt", "a4");
+    const fullHeight = doc.body.scrollHeight;
+    const pdf = new jsPDF("p", "pt", "a4");
 
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-  const canvasHeight = pageHeight * 2; // bigger canvas prevents cropping
-  let renderedHeight = 0;
-  let pageIndex = 0;
+    const canvasHeight = pageHeight * 2;
+    let renderedHeight = 0;
+    let pageIndex = 0;
 
-  const logo = new Image();
-  logo.src = "/Logo.png"; // ensure correct path
+    const logo = new Image();
+    logo.src = "/Logo.png";
 
-  logo.onload = async () => {
-    while (renderedHeight < fullHeight) {
-      const canvas = await html2canvas(doc.body, {
-        scale: 2,
-        y: renderedHeight,
-        height: canvasHeight,
-        backgroundColor: "#ffffff",
-      });
+    logo.onload = async () => {
+      while (renderedHeight < fullHeight) {
+        const canvas = await html2canvas(doc.body, {
+          scale: 2,
+          y: renderedHeight,
+          height: canvasHeight,
+          backgroundColor: "#ffffff",
+        });
 
-      const imgData = canvas.toDataURL("image/png");
-      const imgHeight = (canvas.height * pageWidth) / canvas.width;
+        const imgData = canvas.toDataURL("image/png");
+        const imgHeight = (canvas.height * pageWidth) / canvas.width;
 
-      if (pageIndex > 0) pdf.addPage();
-      pdf.setPage(pageIndex + 1);
+        if (pageIndex > 0) pdf.addPage();
+        pdf.setPage(pageIndex + 1);
 
-      // Logo watermark
-      const logoW = 45;
-      const logoH = (logo.height / logo.width) * logoW;
-      const x = (pageWidth - logoW) / 2;
-      const y = 10;
+        const logoW = 45;
+        const logoH = (logo.height / logo.width) * logoW;
+        const x = (pageWidth - logoW) / 2;
+        const y = 10;
 
-      pdf.addImage(logo, "PNG", x, y, logoW, logoH);
+        pdf.addImage(logo, "PNG", x, y, logoW, logoH);
 
-      // brand text
-      pdf.setFontSize(6);
-      pdf.setTextColor(80, 80, 80);
-      pdf.text("Lessonly", pageWidth / 2, y + logoH + 10, { align: "center" });
+        pdf.setFontSize(6);
+        pdf.setTextColor(80, 80, 80);
+        pdf.text("Lessonly", pageWidth / 2, y + logoH + 10, {
+          align: "center",
+        });
 
-      // main page content
-      pdf.addImage(imgData, "PNG", 20, 60, pageWidth - 40, imgHeight);
+        pdf.addImage(imgData, "PNG", 20, 60, pageWidth - 40, imgHeight);
 
-      renderedHeight += canvasHeight;
-      pageIndex++;
-    }
+        renderedHeight += canvasHeight;
+        pageIndex++;
+      }
 
-    pdf.save(`${title}.pdf`);
-    document.body.removeChild(iframe);
+      pdf.save(`${title}.pdf`);
+      document.body.removeChild(iframe);
+    };
   };
-};
-
 
   return (
     <section className="min-h-screen w-full flex justify-center">
       <div className="w-[90%] max-w-3xl flex flex-col gap-10">
-
         <div
           id="pdf-render-area"
           className="prose max-w-none p-10 hidden"
@@ -296,11 +316,9 @@ const downloadPDF = async () => {
           </form>
         </div>
 
-        {/* ------------ FINAL PREVIEW WITHOUT HEADING ------------ */}
+        {/* ------------ CONTENT PREVIEW ------------ */}
         {result && (
           <div className="w-full mt-10 bg-white shadow-lg rounded-xl p-6">
-
-            {/* TOP BUTTON BAR */}
             <div className="flex justify-end items-center mb-4 gap-3">
               <button
                 onClick={() => setIsEditing(!isEditing)}
@@ -317,7 +335,6 @@ const downloadPDF = async () => {
               </button>
             </div>
 
-            {/* CONTENT PREVIEW */}
             {isEditing ? (
               <textarea
                 className="w-full h-72 border border-gray-300 rounded-lg p-3 text-gray-800"
@@ -329,10 +346,17 @@ const downloadPDF = async () => {
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
-                    code({ className, children }) {
-                      return (
+                    code({ inline, className, children, ...props }) {
+                      const codeString = String(children || "").trim();
+                      return inline ? (
+                        <code className={className} {...props}>
+                          {codeString}
+                        </code>
+                      ) : (
                         <pre>
-                          <code className={className}>{children}</code>
+                          <code className={className} {...props}>
+                            {codeString}
+                          </code>
                         </pre>
                       );
                     },
@@ -352,7 +376,6 @@ const downloadPDF = async () => {
           <img src="history.svg" className="h-4" />
           History
         </button>
-
       </div>
     </section>
   );
