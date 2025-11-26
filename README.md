@@ -1,110 +1,85 @@
-**Lessonly – AI Teaching Assistant**
-====================================
+# 📘 Lessonly – AI Teaching Assistant
 
-Lessonly is a lightweight, fast, and AI-powered tool that helps educators generate high-quality classroom content within seconds.It supports lesson plans, quizzes, notes, mindmaps, and PDF exports ,all powered by modern tools like **React**, **TailwindCSS**, and **Supabase**.
+Lessonly is a smart AI-powered platform that helps teachers and educators generate high-quality classroom material within seconds.  
+From lesson plans to quizzes and mindmaps — everything is automated with modern web technologies.
 
-🚀 Features
------------
+---
 
-### ✨ AI Content Generation
+## 🚀 Features
 
-*   Create lesson plans, summaries, quizzes, or explanations.
-    
-*   Powered by **Gemini AI** through secure Supabase Edge Functions.
-    
+### ✨ AI Content Generation  
+- Create lesson plans, summaries, quizzes, and explanations.  
+- Uses **Gemini AI** through secure Supabase Edge Functions.  
 
-### 🧠 Mindmap Generator
+### 🧠 Mindmap Generator  
+- Upload a PDF → Extract text → Generate mindmap.  
+- Built using **React Flow**.  
+- Export and save mindmaps to your library.
 
-*   Upload a PDF → Extract text → Convert it into a visual mindmap.
-    
-*   Built with **React Flow**, supports export and saving.
-    
+### 📚 Content History  
+- Save generated content to your Supabase database.  
+- Edit, re-download, or delete anytime.
 
-### 📚 History & Library
+### 🔐 Secure Authentication  
+- User login/signup with **Supabase Auth**.  
+- RLS ensures each user can access only their own content.
 
-*   Save generated materials to your Supabase database.
-    
-*   Edit, download, or regenerate anytime.
-    
+### 📄 Export Options  
+- Download generated content as **PDF** (with logo/header).  
+- Export mindmaps as **PNG** files.
 
-### 🔐 Secure Authentication
+---
 
-*   User login/signup via **Supabase Auth**.
-    
-*   Row Level Security ensures each user accesses only their own data.
-    
-
-### 📄 Export Options
-
-*   Download content as **PDF** with a branded header.
-    
-*   Mindmap export as **PNG**.
-    
-
-🛠️ Tech Stack
---------------
+## 🛠️ Tech Stack
 
 ### **Frontend**
-
-*   React (Vite)
-    
-*   TailwindCSS
-    
-*   DaisyUI
-    
-*   shadcn/ui components
-    
-*   React Markdown + Highlight.js
-    
-*   React Flow (for mindmaps)
-    
+- React (Vite)
+- Tailwind CSS
+- DaisyUI  
+- shadcn/ui  
+- React Markdown + Highlight.js  
+- React Flow
 
 ### **Backend**
-
-*   Supabase
-    
-    *   Authentication
-        
-    *   Database (PostgreSQL)
-        
-    *   Row Level Security (RLS)
-        
-    *   Storage
-        
-    *   Edge Functions (AI calls)
-        
+- Supabase  
+  - Authentication  
+  - PostgreSQL Database  
+  - Row Level Security  
+  - Storage  
+  - Edge Functions (AI Calls)
 
 ### **AI**
+- Google Gemini API (via Supabase Edge Functions)
 
-*   Google Gemini API (via Supabase Edge Functions)
-📦 Installation
----------------
+---
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML
+## 📦 Installation
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   git clone https://github.com/your-username/lessonly.git  cd lessonly  npm install  npm run dev   `
+Clone and install dependencies:
 
-Create .env file:
+```bash
+git clone https://github.com/your-username/lessonly.git
+cd lessonly
+npm install
+npm run dev
+```
+## Add your Supabase environment variables:
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML
+## 📁 Folder Structure
+```bash
+src/
+ ├── pages/           # All page components
+ ├── components/      # UI components
+ ├── api/             # API calls (Supabase, AI, etc.)
+ ├── utils/           # Helpers like pdf export, thumbnail generator
+ ├── animations/      # Typing and UI animations
+ └── lib/             # Supabase client
+```
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   VITE_SUPABASE_URL=your_url  VITE_SUPABASE_ANON_KEY=your_key   `
-
-📁 Folder Structure
--------------------
-
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML
-
-src/ ├── pages/ ├── components/ ├── api/ ├── utils/ ├── lib/ └── animations/
-
-👨‍💻 Contributors
-------------------
-
-*   **Chitransh Prasad**
-    
-*   **Sumit Dixit**
-    
-*   **Aryan Kumar**
-    
-*   **Sanjay Prasad Yadav**
-    
+## 👨‍💻 Contributors:
+- Chitransh Prasad
+- Sumit Dixit
+- Aryan Kumar
+- Sanjay Prasad Yadav
