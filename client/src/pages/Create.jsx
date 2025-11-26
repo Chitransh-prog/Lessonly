@@ -9,12 +9,13 @@ import remarkGfm from "remark-gfm";
 import hljs from "highlight.js";
 import { marked } from "marked";
 import "highlight.js/styles/github.css";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
-// ❗ Remove raw HTML completely (to avoid hydration errors)
+// 🔒 Removes unwanted HTML to prevent hydration issues
 function sanitizeToMarkdown(input) {
   if (!input) return "";
 
-  // AI returns JSON → convert to string
   let text =
     typeof input === "string"
       ? input
@@ -24,13 +25,9 @@ function sanitizeToMarkdown(input) {
         input?.text ||
         JSON.stringify(input, null, 2);
 
-  // Remove all inline HTML tags
   text = text.replace(/<[^>]*>/g, "");
-
-  // Fix broken HTML escaping from AI
   text = text.replace(/&lt;/g, "<").replace(/&gt;/g, ">");
 
-  // Normalize spacing
   return text.replace(/\n{3,}/g, "\n\n").trim();
 }
 
@@ -41,13 +38,16 @@ export default function Create() {
   const [grade, setGrade] = useState("");
   const [tone, setTone] = useState("");
   const [language, setLanguage] = useState("");
+
   const [result, setResult] = useState("");
+  const [renderedHTML, setRenderedHTML] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const navigate = useNavigate();
 
-  // Convert Markdown → HTML (for PDF)
+  // Convert Markdown → HTML for PDF rendering
   useEffect(() => {
     if (result) {
       const html = marked.parse(result);
@@ -55,7 +55,7 @@ export default function Create() {
     }
   }, [result]);
 
-  // Apply highlight.js
+  // Syntax highlighting
   useEffect(() => {
     document.querySelectorAll("pre code").forEach((block) => {
       hljs.highlightElement(block);
@@ -85,6 +85,7 @@ export default function Create() {
       setResult(cleaned);
 
       const user_id = await getUserId();
+
       await saveGeneratedContent({
         title: topic,
         description: summary || "",
@@ -99,6 +100,7 @@ export default function Create() {
     setLoading(false);
   };
 
+  // 🔥 PDF Downloader
   const downloadPDF = async () => {
     const content = result;
     const title = topic || "Generated Content";
@@ -133,7 +135,6 @@ export default function Create() {
               padding: 10px;
               border-radius: 5px;
               font-size: 13px;
-              overflow-x: auto;
             }
           </style>
         </head>
@@ -202,12 +203,14 @@ export default function Create() {
   return (
     <section className="min-h-screen w-full flex justify-center">
       <div className="w-[90%] max-w-3xl flex flex-col gap-10">
+        {/* Hidden area used for PDF rendering */}
         <div
           id="pdf-render-area"
           className="prose max-w-none p-10 hidden"
           dangerouslySetInnerHTML={{ __html: renderedHTML }}
         ></div>
 
+        {/* FORM SECTION */}
         <div className="bg-white p-6 rounded-xl shadow-md">
           <div className="flex flex-col items-center mb-5">
             <img src="Logo.png" alt="logo" className="h-20 w-20" />
@@ -222,7 +225,6 @@ export default function Create() {
           </div>
 
           <form onSubmit={handleGenerate} className="space-y-5">
-
             <div>
               <label className="text-sm font-medium">Topic</label>
               <input
@@ -302,7 +304,6 @@ export default function Create() {
               />
             </div>
 
-            {/* Generate Button */}
             <button
               type="submit"
               className="h-12 w-full rounded-xl bg-black text-white font-semibold text-xl flex items-center justify-center gap-2"
@@ -312,7 +313,7 @@ export default function Create() {
           </form>
         </div>
 
-        {/* ------------ CONTENT PREVIEW ------------ */}
+        {/* PREVIEW SECTION */}
         {result && (
           <div className="w-full mt-10 bg-white shadow-lg rounded-xl p-6">
             <div className="flex justify-end items-center mb-4 gap-3">
@@ -324,7 +325,7 @@ export default function Create() {
               </button>
 
               <button
-                onClick={DownloadPDF}
+                onClick={downloadPDF}
                 className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm"
               >
                 Download PDF
@@ -365,16 +366,17 @@ export default function Create() {
           </div>
         )}
 
-</div>
-        <button
-          onClick={() => navigate("/create-history")}
-          className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-60 flex items-center justify-center gap-2"
-        >
-          <img src="history.svg" className="h-4" />
-          History
-        </button>
+        {/* History Button */}
+        <section>
+          <button
+            onClick={() => navigate("/create-history")}
+            className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-60 flex items-center justify-center gap-2"
+          >
+            <img src="history.svg" className="h-4" />
+            History
+          </button>
+        </section>
       </div>
     </section>
-    
   );
 }
