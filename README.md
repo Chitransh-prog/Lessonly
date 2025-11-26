@@ -65,6 +65,7 @@ npm run dev
 ```
 ## Add your Supabase environment variables:
 VITE_SUPABASE_URL=your_supabase_url
+
 VITE_SUPABASE_ANON_KEY=your_anon_key
 
 ## 📁 Folder Structure
