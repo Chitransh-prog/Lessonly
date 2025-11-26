@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import TextType from "../animations/TextType";
-import { saveMindmapToDB } from "../api/mindmap";
+import { saveMindmapToDB } from "../api/saveMindmap.js";
 import { supabase } from "../lib/supabase";
 import ExportButton from "../components/ExportButton";
 import { ReactFlowProvider } from "@xyflow/react";
@@ -9,7 +9,7 @@ import useThumbnail from "@/utils/useThumbnail";
 import Flow from "../components/Flow.tsx";
 import { useNavigate } from "react-router-dom";
 
-import { generateMindmapFromPdf } from "../api/fetchAiResponse";
+import { generateMindmapFromPdf } from "../api/fetchNodesAndEdges.tsx";
 import { extractPdfText } from "@/utils/extractPdfText";
 
 function InnerFlowRenderer({

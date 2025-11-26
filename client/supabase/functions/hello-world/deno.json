@@ -1,3 +1,5 @@
-{
-  "imports": {}
+{   
+    "tasks": {
+        "test": "deno test --allow-all"
+    }
 }

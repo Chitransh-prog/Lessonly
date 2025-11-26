@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase } from "../lib/supabase.js";
 
 export async function checkUsageLimit(userId, MAX_REQUESTS = 200) {
   const month = new Date().toISOString().slice(0, 7); // "2025-11"

@@ -22,19 +22,38 @@ export const fetchUserName = async () => {
 
 export const fetchUserAvatar = async () => {
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    // Always use getUser() — fast + reliable
+    const { data } = await supabase.auth.getUser();
+    const user = data?.user;
 
-    if (session?.user) {
-      const avatarUrl = session.user.user_metadata.avatar_url;
-      console.log("This is the avatar image", avatarUrl);
-      if (!avatarUrl) {
-        console.log("Avatar url not found");
-      }
-      return avatarUrl;
+    if (!user) return null;
+
+    const avatarPath = user.user_metadata?.avatar_url;
+
+    // No avatar stored
+    if (!avatarPath) {
+      console.log("No avatar found in metadata");
+      return null;
     }
+
+    // If avatar URL is already a public URL → return it
+    if (avatarPath.startsWith("http")) {
+      return avatarPath;
+    }
+
+    // If avatar is stored inside Supabase Storage (private bucket)
+    const { data: signed, error } = await supabase.storage
+      .from("avatars")
+      .createSignedUrl(avatarPath, 3600); // valid 1 hour
+
+    if (error) {
+      console.log("Could not fetch signed avatar:", error);
+      return null;
+    }
+
+    return signed?.signedUrl || null;
   } catch (error) {
-    console.error("Error while fetching User Avatar: ", error);
+    console.error("Error fetching avatar:", error);
+    return null;
   }
 };
