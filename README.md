@@ -77,8 +77,6 @@ Lessonly is a lightweight, fast, and AI-powered tool that helps educators genera
 ### **AI**
 
 *   Google Gemini API (via Supabase Edge Functions)
-    
-
 📦 Installation
 ---------------
 
@@ -97,7 +95,7 @@ Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQL
 
 Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   src/   ├── pages/   ├── components/   ├── api/   ├── utils/   ├── lib/   └── animations/   `
+src/ ├── pages/ ├── components/ ├── api/ ├── utils/ ├── lib/ └── animations/
 
 👨‍💻 Contributors
 ------------------
@@ -110,10 +108,3 @@ Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQL
     
 *   **Sanjay Prasad Yadav**
     
-
-📜 License
-----------
-
-MIT License • Free for personal and commercial use.
-
-If you want, I can also generate:🔹 a **more aesthetic README with badges & visuals**🔹 a **long detailed README**🔹 a **GIF-based showcase README**
