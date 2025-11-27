@@ -40,7 +40,6 @@ export default function Profile_Sidebar({ onClose }) {
 
         <button
           onClick={() => {
-            onClose();
             handleSignOut();
           }}
           className="w-full text-left px-3 py-2 rounded-lg text-red-400 
