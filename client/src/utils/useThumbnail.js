@@ -23,14 +23,26 @@ export default function useThumbnail() {
       const transform = getViewportForBounds(bounds, width, height, 0.5, 2);
 
       // 3. Generate PNG
-      const blob = await HtmlToImage.toBlob(rf, {
+      const MAX_THUMB_SIZE = 400;
+
+      const aspect = width / height;
+      let finalWidth = aspect >= 1 ? MAX_THUMB_SIZE : MAX_THUMB_SIZE * aspect;
+      let finalHeight = aspect >= 1 ? MAX_THUMB_SIZE / aspect : MAX_THUMB_SIZE;
+
+      const scaleFactor = finalWidth / width;
+
+      const blob = await HtmlToImage.toJpeg(rf, {
+        quality: 0.3,
         backgroundColor: "#ffffff",
-        width,
-        height,
+        width: finalWidth,
+        height: finalHeight,
         style: {
           width: `${width}px`,
           height: `${height}px`,
-          transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.zoom})`,
+          transform: `
+      translate(${transform.x}px, ${transform.y}px)
+      scale(${transform.zoom * scaleFactor})
+    `,
         },
       });
 
