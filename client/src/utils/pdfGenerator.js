@@ -19,30 +19,29 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
     title = "Document",
     watermarkText = "LESSONLY",
     headerText = "LESSONLY", // New parameter for fixed header text
-    headerImageUrl = null,   // New parameter for fixed header image
+    headerImageUrl = null, // New parameter for fixed header image
     filename = "generated-document.pdf",
   } = options;
 
   // --- Preload Header Image (If provided) ---
   let logoImage = null;
   let logoYOffset = 0; // To track where the logo stopped drawing
-  
+
   if (headerImageUrl) {
     logoImage = new Image();
     logoImage.src = headerImageUrl;
     try {
-        await new Promise((resolve, reject) => {
-            logoImage.onload = resolve;
-            logoImage.onerror = reject;
-            // Fallback for immediate loading
-            if (logoImage.complete) resolve();
-        });
+      await new Promise((resolve, reject) => {
+        logoImage.onload = resolve;
+        logoImage.onerror = reject;
+        // Fallback for immediate loading
+        if (logoImage.complete) resolve();
+      });
     } catch (e) {
-        console.error("Could not load header image:", e);
-        logoImage = null;
+      console.error("Could not load header image:", e);
+      logoImage = null;
     }
   }
-
 
   // 1) Build a clean HTML snapshot (print-safe, no Tailwind)
   const html = marked.parse(markdown || "");
@@ -167,7 +166,7 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
   // target width in pts we want to fit into page width minus margins
   const marginPt = 40;
   // Increase top margin slightly to avoid header overlap
-  const topMarginPt = 65; 
+  const topMarginPt = 65;
   const printableWidthPt = pageWidthPt - marginPt * 2;
   const printableHeightPt = pageHeightPt - topMarginPt - marginPt;
 
@@ -179,56 +178,54 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
   // We'll cut by page height in pts
   const totalPages = Math.ceil(renderedHeightPt / printableHeightPt);
 
-
   // --- Helper Functions for Drawing ---
 
   // Draw Central Watermark (translucent, rotated)
   function drawCentralWatermark() {
-      const watermarkAngle = 45; 
-      const watermarkOpacity = 0.12; // Use subtle opacity
+    const watermarkAngle = 45;
+    const watermarkOpacity = 0.12; // Use subtle opacity
 
-      pdf.saveGraphicsState && pdf.saveGraphicsState();
-      
-      pdf.setAlpha && pdf.setAlpha(watermarkOpacity);
-      pdf.setFontSize(60);
-      pdf.setTextColor(150, 150, 150); 
+    pdf.saveGraphicsState && pdf.saveGraphicsState();
 
-      const xCenter = pageWidthPt / 2;
-      const yCenter = pageHeightPt / 2;
+    pdf.setAlpha && pdf.setAlpha(watermarkOpacity);
+    pdf.setFontSize(60);
+    pdf.setTextColor(150, 150, 150);
 
-      pdf.text(watermarkText, xCenter, yCenter, { 
-        angle: watermarkAngle, 
-        align: "center" 
-      });
+    const xCenter = pageWidthPt / 2;
+    const yCenter = pageHeightPt / 2;
 
-      pdf.restoreGraphicsState && pdf.restoreGraphicsState();
+    pdf.text(watermarkText, xCenter, yCenter, {
+      angle: watermarkAngle,
+      align: "center",
+    });
+
+    pdf.restoreGraphicsState && pdf.restoreGraphicsState();
   }
-  
+
   // Draw Fixed Header (logo and text)
   function drawFixedHeader() {
-      const yLogo = 10;
-      let currentY = yLogo;
+    const yLogo = 10;
+    let currentY = yLogo;
 
-      // 1. Draw Logo (if available)
-      if (logoImage) {
-        const logoW = 40;
-        const logoH = (logoImage.height / logoImage.width) * logoW;
-        const xLogo = (pageWidthPt - logoW) / 2;
+    // 1. Draw Logo (if available)
+    if (logoImage) {
+      const logoW = 40;
+      const logoH = (logoImage.height / logoImage.width) * logoW;
+      const xLogo = (pageWidthPt - logoW) / 2;
 
-        pdf.addImage(logoImage, "PNG", xLogo, currentY, logoW, logoH);
-        currentY += logoH;
-      }
-      
-      // 2. Draw Brand Text below logo or at the top (ALWAYS runs)
-      if (headerText) {
-          pdf.setFontSize(7);
-          pdf.setTextColor(80, 80, 80);
-          pdf.text(headerText, pageWidthPt / 2, currentY + 8, { 
-            align: "center" 
-          });
-      }
+      pdf.addImage(logoImage, "PNG", xLogo, currentY, logoW, logoH);
+      currentY += logoH;
+    }
+
+    // 2. Draw Brand Text below logo or at the top (ALWAYS runs)
+    if (headerText) {
+      pdf.setFontSize(7);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text(headerText, pageWidthPt / 2, currentY + 8, {
+        align: "center",
+      });
+    }
   }
-
 
   // helper to get canvas chunk as image for a page
   for (let page = 0; page < totalPages; page++) {
@@ -239,7 +236,10 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
     // compute source rectangle in original canvas px
     const pageHeightPx = (printableHeightPt * (96 / 72)) / scaleFactor;
     pageCanvas.width = canvas.width;
-    pageCanvas.height = Math.min(pageHeightPx, canvas.height - page * pageHeightPx);
+    pageCanvas.height = Math.min(
+      pageHeightPx,
+      canvas.height - page * pageHeightPx
+    );
 
     pageCanvasCtx.fillStyle = "#ffffff";
     pageCanvasCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
@@ -269,12 +269,21 @@ export async function generatePDFFromMarkdown(markdown, options = {}) {
     // 2. Add page content image
     // calculate image dimensions in points to fit printable width
     const imgWidthPt = printableWidthPt;
-    const imgHeightPt = (pxToPt(pageCanvas.height) * scaleFactor);
+    const imgHeightPt = pxToPt(pageCanvas.height) * scaleFactor;
     const x = marginPt;
     const y = topMarginPt; // Start content lower to reserve space for header
 
-    pdf.addImage(imgData, "PNG", x, y, imgWidthPt, imgHeightPt, undefined, "FAST");
-    
+    pdf.addImage(
+      imgData,
+      "PNG",
+      x,
+      y,
+      imgWidthPt,
+      imgHeightPt,
+      undefined,
+      "FAST"
+    );
+
     // 3. Draw Fixed Header (on top of content)
     drawFixedHeader();
   }
