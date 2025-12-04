@@ -135,7 +135,7 @@ export default function Mindmaps() {
   return (
     <div className="min-h-screen flex flex-col items-center pt-12 gap-6 pb-20">
       
-      <img src="Logo.png" alt="Lessonly" className="h-24" />
+      <img src="Logo.png" alt="Lessonly" className="h-20 w-20" />
 
       <TextType
         className="text-4xl font-black"

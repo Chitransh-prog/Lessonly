@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await req.json();
 
-    const { topic, summary, type, grade, tone, language } = body;
+    const { topic,syllabus, summary, type, grade, tone, language } = body;
 
     //------------------------------------------------------
     // Validate user input
@@ -106,47 +106,67 @@ Deno.serve(async (req: Request) => {
     //------------------------------------------------------
     // PROMPT — Clean Markdown Output
     //------------------------------------------------------
-    const prompt = `
-You are an advanced educational content generator.
-Produce **clean, well-structured Markdown**, optimized for readability.
+const prompt = `
+You are an educational content generator.  
+Produce **clean, well-structured Markdown** that is easy to read and suitable for PDF export.
 
-### Requirements:
+---
 
-- Topic: **${topic}**
-- Summary: ${summary || "None"}
-- Content Type: **${type}**
-- Grade Level: **${grade}**
-- Tone: **${tone}**
-- Language: **${language}**
+## Input Details
 
-### Formatting Rules:
+- **Topic:** ${topic}
+- **Syllabus:** ${syllabus}
+- **Summary:** ${summary || "None"}
+- **Type:** ${type}
+- **Grade Level:** ${grade}
+- **Tone:** ${tone}
+- **Language:** ${language}
 
-- Use **proper Markdown** including:
-  - Headings
-  - Paragraphs
-  - Numbered lists
-  - Sub-sections
-  - Code blocks (if needed)
-  - Tables (if helpful)
+---
 
-- ALWAYS format nicely:
-  - Good spacing
-  - Clean sections
-  - Professional headers
+## Markdown Rules (Important)
+- Use proper Markdown:
+  - # Title
+  - ## Section Headings
+  - ### Subheadings
+  - Paragraphs with spacing
+  - Bullet lists (- …)
+  - Numbered lists (1. …)
+  - Code blocks (when relevant)
+  - Tables (only when useful)
+- Add a blank line between all sections and paragraphs.
+- Do **not** create long wall-of-text paragraphs.
+- Write only Markdown. No HTML, no explanations.
 
-- If creating lesson plans, quizzes, notes:
-  - Include:
-    - Overview
-    - Key Concepts
-    - Steps / Explanation
-    - Examples
-    - Summary
-    - Quiz (optional)
-    - Answer Key (optional)
+---
 
-### Output:
-Write only **Markdown**, nothing else.
+## Required Structure
+Follow this layout unless the content type requires a different one:
+
+# Title (Topic)
+## Overview
+Short introduction connecting the topic + syllabus.
+
+## Key Points from the Syllabus
+Bullet list of the important items.
+
+## Main Content
+Well-structured explanation using sections and subheadings.
+
+## Examples
+Clear, simple examples. Code blocks if needed.
+
+## Summary
+Short recap of the key ideas.
+
+## Quiz (Optional)
+5 short MCQs + answers below them.
+
+---
+
+Return the final answer **only in Markdown**.
 `;
+
 
     //------------------------------------------------------
     // Gemini Model

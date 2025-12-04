@@ -9,10 +9,9 @@ import remarkGfm from "remark-gfm";
 import hljs from "highlight.js";
 import { marked } from "marked";
 import "highlight.js/styles/github.css";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { generatePDFFromMarkdown } from "@/utils/pdfGenerator";
 
-// 🔒 Removes unwanted HTML to prevent hydration issues
+// Clean Markdown
 function sanitizeToMarkdown(input) {
   if (!input) return "";
 
@@ -38,6 +37,7 @@ export default function Create() {
   const [grade, setGrade] = useState("");
   const [tone, setTone] = useState("");
   const [language, setLanguage] = useState("");
+  const [syllabus, setSyllabus] = useState("");
 
   const [result, setResult] = useState("");
   const [renderedHTML, setRenderedHTML] = useState("");
@@ -47,11 +47,10 @@ export default function Create() {
 
   const navigate = useNavigate();
 
-  // Convert Markdown → HTML for PDF rendering
+  // Markdown → HTML for PDF
   useEffect(() => {
     if (result) {
-      const html = marked.parse(result);
-      setRenderedHTML(html);
+      setRenderedHTML(marked.parse(result));
     }
   }, [result]);
 
@@ -89,6 +88,7 @@ export default function Create() {
       await saveGeneratedContent({
         title: topic,
         description: summary || "",
+        syllabus: syllabus || "",
         content: cleaned,
         user_id,
       });
@@ -100,117 +100,24 @@ export default function Create() {
     setLoading(false);
   };
 
-  // 🔥 PDF Downloader
-  const downloadPDF = async () => {
-    const content = result;
-    const title = topic || "Generated Content";
+  // FIXED: Taken arguments correctly
+  const handleDownloadPDF = (content, title) => {
+    if (!content) return;
 
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.top = "-9999px";
-    iframe.style.left = "-9999px";
-    iframe.style.width = "900px";
-    iframe.style.height = "2100px";
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentDocument;
-
-    doc.open();
-    doc.write(`
-      <html>
-        <head>
-          <style>
-            body {
-              background: white;
-              color: black;
-              font-family: Arial, sans-serif;
-              padding: 40px;
-              font-size: 14px;
-              line-height: 1.6;
-              width: 800px;
-            }
-            h1 { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-            pre {
-              background: #f4f4f4;
-              padding: 10px;
-              border-radius: 5px;
-              font-size: 13px;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>${title}</h1>
-          ${marked.parse(content)}
-        </body>
-      </html>
-    `);
-    doc.close();
-
-    await new Promise((r) => setTimeout(r, 300));
-
-    const fullHeight = doc.body.scrollHeight;
-    const pdf = new jsPDF("p", "pt", "a4");
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    const canvasHeight = pageHeight * 2;
-    let renderedHeight = 0;
-    let pageIndex = 0;
-
-    const logo = new Image();
-    logo.src = "/Logo.png";
-
-    logo.onload = async () => {
-      while (renderedHeight < fullHeight) {
-        const canvas = await html2canvas(doc.body, {
-          scale: 2,
-          y: renderedHeight,
-          height: canvasHeight,
-          backgroundColor: "#ffffff",
-        });
-
-        const imgData = canvas.toDataURL("image/png");
-        const imgHeight = (canvas.height * pageWidth) / canvas.width;
-
-        if (pageIndex > 0) pdf.addPage();
-        pdf.setPage(pageIndex + 1);
-
-        const logoW = 45;
-        const logoH = (logo.height / logo.width) * logoW;
-        const x = (pageWidth - logoW) / 2;
-        const y = 10;
-
-        pdf.addImage(logo, "PNG", x, y, logoW, logoH);
-
-        pdf.setFontSize(6);
-        pdf.setTextColor(80, 80, 80);
-        pdf.text("Lessonly", pageWidth / 2, y + logoH + 10, {
-          align: "center",
-        });
-
-        pdf.addImage(imgData, "PNG", 20, 60, pageWidth - 40, imgHeight);
-
-        renderedHeight += canvasHeight;
-        pageIndex++;
-      }
-
-      pdf.save(`${title}.pdf`);
-      document.body.removeChild(iframe);
-    };
+    generatePDFFromMarkdown(content, {
+      title,
+      filename: `${title}.pdf`,
+      watermarkText: "LESSONLY",
+      headerText: "LESSONLY",
+      headerImageUrl: "/Logo.png",
+    });
   };
 
   return (
     <section className="min-h-screen w-full flex justify-center">
       <div className="w-[90%] max-w-3xl flex flex-col gap-10">
-        {/* Hidden area used for PDF rendering */}
-        <div
-          id="pdf-render-area"
-          className="prose max-w-none p-10 hidden"
-          dangerouslySetInnerHTML={{ __html: renderedHTML }}
-        ></div>
 
-        {/* FORM SECTION */}
+        {/* FORM */}
         <div className="bg-white p-6 rounded-xl shadow-md">
           <div className="flex flex-col items-center mb-5">
             <img src="Logo.png" alt="logo" className="h-20 w-20" />
@@ -231,9 +138,19 @@ export default function Create() {
                 type="text"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                className="border h-12 w-full rounded-lg border-gray-300 px-3"
+                className="border h-12 w-full rounded-lg px-3"
                 placeholder="Enter your Topic"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Syllabus</label>
+              <textarea
+                value={syllabus}
+                onChange={(e) => setSyllabus(e.target.value)}
+                className="border w-full rounded-lg p-3 h-20"
+                placeholder="Enter syllabus details (optional)"
               />
             </div>
 
@@ -242,7 +159,7 @@ export default function Create() {
               <textarea
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
-                className="border w-full rounded-lg border-gray-300 p-3 h-20"
+                className="border w-full rounded-lg p-3 h-20"
                 placeholder="Enter optional summary"
               />
             </div>
@@ -252,7 +169,7 @@ export default function Create() {
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="border h-12 w-full rounded-lg border-gray-300 px-3"
+                className="border h-12 w-full rounded-lg px-3"
               >
                 <option>Select Type</option>
                 <option value="Lesson Plan">Lesson Plan</option>
@@ -268,7 +185,7 @@ export default function Create() {
               <select
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
-                className="border h-12 w-full rounded-lg border-gray-300 px-3"
+                className="border h-12 w-full rounded-lg px-3"
               >
                 <option>Select Grade</option>
                 <option value="College/University">College/University</option>
@@ -283,7 +200,7 @@ export default function Create() {
               <select
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
-                className="border h-12 w-full rounded-lg border-gray-300 px-3"
+                className="border h-12 w-full rounded-lg px-3"
               >
                 <option>Select Tone</option>
                 <option value="Technical">Technical</option>
@@ -299,34 +216,36 @@ export default function Create() {
                 type="text"
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="border h-12 w-full rounded-lg border-gray-300 px-3"
+                className="border h-12 w-full rounded-lg px-3"
                 placeholder="Enter language"
               />
             </div>
 
             <button
               type="submit"
-              className="h-12 w-full rounded-xl bg-black text-white font-semibold text-xl flex items-center justify-center gap-2"
+              className="h-12 w-full rounded-xl bg-black text-white text-xl flex items-center justify-center"
             >
               {loading ? "Generating..." : "Generate with AI"}
             </button>
           </form>
         </div>
 
-        {/* PREVIEW SECTION */}
+        {/* PREVIEW */}
         {result && (
           <div className="w-full mt-10 bg-white shadow-lg rounded-xl p-6">
-            <div className="flex justify-end items-center mb-4 gap-3">
+            <div className="flex justify-end mb-4 gap-3">
+              
               <button
                 onClick={() => setIsEditing(!isEditing)}
-                className="px-4 py-2 bg-black text-white rounded-lg text-sm"
+                className="px-4 py-2 bg-black text-white rounded-lg"
               >
                 {isEditing ? "Save" : "Edit"}
               </button>
 
+              {/* ⭐ FIXED BUTTON */}
               <button
-                onClick={downloadPDF}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm"
+                onClick={() => handleDownloadPDF(result, topic || "Document")}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg"
               >
                 Download PDF
               </button>
@@ -334,7 +253,7 @@ export default function Create() {
 
             {isEditing ? (
               <textarea
-                className="w-full h-72 border border-gray-300 rounded-lg p-3"
+                className="w-full h-72 border rounded-lg p-3"
                 value={result}
                 onChange={(e) => setResult(e.target.value)}
               />
@@ -366,16 +285,14 @@ export default function Create() {
           </div>
         )}
 
-        {/* History Button */}
-        <section>
-          <button
-            onClick={() => navigate("/create-history")}
-            className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-60 flex items-center justify-center gap-2"
-          >
-            <img src="history.svg" className="h-4" />
-            History
-          </button>
-        </section>
+        {/* HISTORY BUTTON */}
+        <button
+          onClick={() => navigate("/create-history")}
+          className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-60 flex items-center justify-center gap-2"
+        >
+          <img src="history.svg" className="h-4" />
+          History
+        </button>
       </div>
     </section>
   );

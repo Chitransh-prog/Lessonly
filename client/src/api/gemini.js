@@ -3,6 +3,7 @@ import { checkUsageLimit } from "@/utils/createUsageLimit";
 
 export async function generateEducationalContent({
   topic,
+  syllabus,
   summary,
   type,
   grade,
@@ -24,7 +25,7 @@ export async function generateEducationalContent({
 
     // 3️⃣ Call your edge function
     const { data, error } = await supabase.functions.invoke("create-content", {
-      body: { topic, summary, type, grade, tone, language },
+      body: { topic, syllabus, summary, type, grade, tone, language },
     });
 
     if (error) {
