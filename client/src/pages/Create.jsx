@@ -174,6 +174,13 @@ export default function Create() {
             )}
           </div>
         )}
+        <button
+          onClick={() => navigate("/mindmaps-history")}
+          className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-10 flex items-center justify-center gap-2"
+        >
+          <img src="history.svg" className="h-4" />
+          History
+        </button>
       </div>
     </section>
   );
