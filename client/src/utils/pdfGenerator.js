@@ -2,128 +2,247 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { marked } from "marked";
 import hljs from "highlight.js";
-import "highlight.js/styles/github.css";
+
+// Note: We do NOT import the CSS here because it won't apply to the iframe.
+// We inject it manually below.
 
 export async function generatePDFFromMarkdown(markdown, options = {}) {
   const {
     title = "Document",
     headerText = "LESSONLY",
-    headerImageUrl = null,
+    headerImageUrl = "/Logo.png", // Default to your local logo
     filename = "generated-document.pdf",
   } = options;
 
-  // --- Preload Header Image ---
-  let logoImage = null;
-  if (headerImageUrl) {
-    logoImage = new Image();
-    logoImage.src = headerImageUrl;
-    try {
-      await new Promise((resolve, reject) => {
-        logoImage.onload = resolve;
-        logoImage.onerror = reject;
-        if (logoImage.complete) resolve();
-      });
-    } catch (e) {
-      console.error("Header image load failed:", e);
-    }
-  }
+  // --- 1. Load Header Logo (Pre-fetch) ---
+  const logoPromise = new Promise((resolve) => {
+    if (!headerImageUrl) return resolve(null);
+    const img = new Image();
+    img.src = headerImageUrl;
+    img.crossOrigin = "Anonymous"; // Critical for html2canvas
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      console.warn("Header image failed to load");
+      resolve(null);
+    };
+  });
 
-  // 1) Build HTML snapshot
-  const html = marked.parse(markdown || "");
-  const documentHtml = `
+  const logoImage = await logoPromise;
+
+  // --- 2. Setup HTML & Styles ---
+  // We use a CDN for highlight.js styles so the iframe can access them
+  const hljsStyleUrl = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css";
+
+  const htmlContent = marked.parse(markdown || "");
+  
+  const iframeHTML = `
+    <!DOCTYPE html>
     <html>
       <head>
+        <link rel="stylesheet" href="${hljsStyleUrl}">
         <style>
-          html, body { margin: 0; padding: 0; background: #fff; color: #111827; font-family: sans-serif; }
-          .pdf-container { box-sizing: border-box; width: 794px; padding: 70px 48px 48px 48px; }
-          h1 { font-size: 26px; margin: 0 0 12px 0; border-bottom: 2px solid #eee; padding-bottom: 8px; }
-          p { margin: 8px 0; line-height: 1.6; font-size: 13px; }
-          pre { background: #1a1a1a; color: #fff; padding: 12px; border-radius: 6px; }
-          code { font-family: monospace; font-size: 12px; }
-          table { border-collapse: collapse; width: 100%; margin: 10px 0; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+          
+          html, body { 
+            margin: 0; padding: 0; 
+            background: #ffffff; 
+            color: #111827; 
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+          }
+          
+          /* A4 Dimensions (approx) for the container to match PDF ratio */
+          .pdf-container { 
+            width: 794px; /* A4 width at 96 DPI */
+            min-height: 1123px;
+            padding: 40px 50px; 
+            box-sizing: border-box;
+          }
+
+          /* Typography */
+          h1.doc-title { 
+            font-size: 32px; 
+            font-weight: 800; 
+            margin-bottom: 20px; 
+            border-bottom: 3px solid #000; 
+            padding-bottom: 10px;
+          }
+          h1 { font-size: 24px; margin-top: 24px; font-weight: 700; color: #111; }
+          h2 { font-size: 20px; margin-top: 20px; font-weight: 600; color: #333; }
+          p { font-size: 14px; line-height: 1.6; color: #374151; margin-bottom: 12px; }
+          
+          /* Code Blocks */
+          pre { 
+            background: #f3f4f6; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 8px; 
+            padding: 16px; 
+            margin: 16px 0;
+            white-space: pre-wrap; /* Prevents horizontal scroll cutting off code */
+          }
+          code { font-family: 'Courier New', monospace; font-size: 13px; color: #1f2937; }
+          
+          /* Tables */
+          table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+          th { background: #f9fafb; font-weight: 600; text-align: left; }
+          th, td { border: 1px solid #d1d5db; padding: 10px; font-size: 13px; }
+
+          /* Images */
+          img { max-width: 100%; height: auto; border-radius: 4px; }
+          
+          /* Blockquotes */
+          blockquote {
+            border-left: 4px solid #3b82f6;
+            background: #eff6ff;
+            margin: 16px 0;
+            padding: 12px 20px;
+            color: #1e40af;
+          }
         </style>
       </head>
       <body>
         <div class="pdf-container" id="pdf-content">
-          <h1>${title}</h1>
-          ${html}
+          <h1 class="doc-title">${title}</h1>
+          ${htmlContent}
         </div>
       </body>
     </html>
   `;
 
-  // 2) Off-DOM Iframe for styling isolation
+  // --- 3. Create Invisible Iframe ---
   const iframe = document.createElement("iframe");
-  Object.assign(iframe.style, { position: "fixed", left: "-9000px", width: "820px" });
+  iframe.style.position = "fixed";
+  iframe.style.left = "-10000px";
+  iframe.style.top = "0";
+  iframe.style.width = "850px"; // Slightly larger than container
+  iframe.style.height = "2000px";
   document.body.appendChild(iframe);
+
   const idoc = iframe.contentDocument;
   idoc.open();
-  idoc.write(documentHtml);
+  idoc.write(iframeHTML);
   idoc.close();
 
-  await new Promise(resolve => setTimeout(resolve, 150)); // Allow styles to snap
-
-  // Syntax Highlighting
-  idoc.querySelectorAll("pre code").forEach(block => hljs.highlightElement(block));
-
-  // 3) Capture Canvas
-  const contentEl = idoc.getElementById("pdf-content");
-  const scale = 1.5; // Optimized for speed/quality balance
-  const canvas = await html2canvas(contentEl, {
-    backgroundColor: "#ffffff",
-    scale,
-    useCORS: true,
-    logging: false
+  // --- 4. Wait for Assets to Load ---
+  await new Promise((resolve) => {
+    // Wait for the iframe itself to load (CSS, etc)
+    iframe.onload = async () => {
+      // Also wait for any images inside the markdown content
+      const images = Array.from(idoc.images);
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((res) => { 
+            img.onload = res; 
+            img.onerror = res; 
+          });
+        })
+      );
+      // Small buffer for font rendering
+      setTimeout(resolve, 500);
+    };
   });
 
-  // 4) Generate PDF
-  const pdf = new jsPDF({ unit: "pt", format: "a4" });
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 40;
-  const topMargin = 65;
-  const printW = pageWidth - margin * 2;
-  const printH = pageHeight - topMargin - margin;
+  // Apply Syntax Highlighting inside iframe
+  idoc.querySelectorAll("pre code").forEach((block) => {
+    hljs.highlightElement(block);
+  });
 
-  const canvasW = canvas.width;
-  const ratio = printW / (canvasW * (72 / 96) / scale);
-  const totalHeightPt = (canvas.height * (72 / 96) / scale) * ratio;
-  const totalPages = Math.ceil(totalHeightPt / printH);
+  // --- 5. Capture Canvas ---
+  const element = idoc.getElementById("pdf-content");
+  const scale = 2; // Higher scale for sharper text
+  
+  const canvas = await html2canvas(element, {
+    scale: scale,
+    useCORS: true, // Crucial for external images
+    logging: false,
+    backgroundColor: "#ffffff",
+    windowWidth: 850,
+  });
 
-  for (let i = 0; i < totalPages; i++) {
-    if (i > 0) pdf.addPage();
+  // --- 6. Generate PDF (Image Slicing Method) ---
+  const pdf = new jsPDF("p", "pt", "a4");
+  const pdfW = pdf.internal.pageSize.getWidth();  // 595.28 pt
+  const pdfH = pdf.internal.pageSize.getHeight(); // 841.89 pt
+  
+  const margin = 30;
+  const contentWidth = pdfW - (margin * 2);
+  const contentHeight = pdfH - (margin * 2);
 
-    // Draw Header
-    if (logoImage) {
-      pdf.addImage(logoImage, "PNG", (pageWidth - 30) / 2, 10, 30, 30);
+  const imgWidth = canvas.width;
+  const imgHeight = canvas.height;
+  
+  // Calculate ratio to fit canvas width into PDF content width
+  const ratio = contentWidth / imgWidth;
+  
+  // Convert PDF page height to canvas pixels
+  const pageHeightInCanvasPixels = contentHeight / ratio;
+
+  let heightLeft = imgHeight;
+  let position = 0;
+  let pageCount = 0;
+
+  while (heightLeft > 0) {
+    if (pageCount > 0) {
+      pdf.addPage();
     }
-    pdf.setFontSize(8);
-    pdf.setTextColor(100);
-    pdf.text(headerText, pageWidth / 2, 48, { align: "center" });
 
-    // Chunk Canvas
-    const pageCanvas = document.createElement("canvas");
-    const ctx = pageCanvas.getContext("2d");
-    const sliceHpx = (printH / ratio) / (72 / 96) * scale;
+    // --- Draw Header on every page ---
+    // Background for header to cover any slice seams
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(0, 0, pdfW, margin + 20, 'F');
     
-    pageCanvas.width = canvas.width;
-    pageCanvas.height = Math.min(sliceHpx, canvas.height - i * sliceHpx);
+    // Logo
+    if (logoImage) {
+      // Keep aspect ratio
+      const logoW = 25;
+      const logoH = (logoImage.height / logoImage.width) * logoW;
+      pdf.addImage(logoImage, "PNG", margin, 15, logoW, logoH);
+    }
     
-    ctx.drawImage(canvas, 0, i * sliceHpx, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
+    // Header Text
+    pdf.setFontSize(9);
+    pdf.setTextColor(150);
+    pdf.text(headerText, pdfW - margin, 30, { align: "right" });
     
-    const imgData = pageCanvas.toDataURL("image/jpeg", 0.85); // JPEG is faster/smaller than PNG
-    pdf.addImage(imgData, "JPEG", margin, topMargin, printW, (pageCanvas.height * (72 / 96) / scale) * ratio);
+    // --- Draw Content Slice ---
+    // Add Image slice
+    // We add a slight vertical offset (margin + 20) to push content below header
+    const topOffset = margin + 20;
     
-    // Cleanup chunk memory
-    pageCanvas.width = 0; 
-    pageCanvas.height = 0;
+    // Create a temporary canvas to slice the exact piece we need
+    // This prevents "stretching" or "squashing" artifacts in jsPDF
+    const sourceY = position;
+    const sourceH = Math.min(heightLeft, pageHeightInCanvasPixels);
+    
+    const sliceCanvas = document.createElement('canvas');
+    sliceCanvas.width = imgWidth;
+    sliceCanvas.height = sourceH;
+    
+    const ctx = sliceCanvas.getContext('2d');
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0,0, sliceCanvas.width, sliceCanvas.height);
+    
+    // Draw the specific slice from original canvas
+    ctx.drawImage(
+      canvas, 
+      0, sourceY, imgWidth, sourceH, // Source
+      0, 0, imgWidth, sourceH        // Destination
+    );
+
+    const sliceData = sliceCanvas.toDataURL("image/jpeg", 0.95);
+    
+    // Calculate height in PDF points
+    const pdfSliceHeight = sourceH * ratio;
+
+    pdf.addImage(sliceData, "JPEG", margin, topOffset, contentWidth, pdfSliceHeight);
+
+    heightLeft -= pageHeightInCanvasPixels;
+    position += pageHeightInCanvasPixels;
+    pageCount++;
   }
 
-  cleanupIframe(iframe);
+  // --- 7. Save & Cleanup ---
   pdf.save(filename);
-}
-
-function cleanupIframe(ifr) {
-  try { ifr.parentElement.removeChild(ifr); } catch (e) {}
+  document.body.removeChild(iframe);
 }

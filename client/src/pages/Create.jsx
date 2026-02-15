@@ -8,7 +8,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import hljs from "highlight.js";
 import { marked } from "marked";
-import "highlight.js/styles/github.css";
+import "highlight.js/styles/github-dark.css"; // Changed to dark theme for code blocks
 import { generatePDFFromMarkdown } from "@/utils/pdfGenerator";
 
 // Clean Markdown logic
@@ -62,29 +62,18 @@ export default function Create() {
     setLoading(true);
     setResult(""); 
 
-    // 👇 FIXED: Extract values from formData before using them
     const { topic, summary, type, grade, tone, language, syllabus } = formData;
 
     try {
-      // 1. Generate Content
       const data = await generateEducationalContent({
-        topic,
-        summary,
-        type,
-        grade,
-        tone,
-        language,
-        syllabus,
+        topic, summary, type, grade, tone, language, syllabus,
       });
 
       if (!data) throw new Error("No data received from AI");
 
       const cleaned = sanitizeToMarkdown(data);
-      
-      // ✅ SUCCESS: Show result immediately
       setResult(cleaned);
 
-      // 2. Save to History (Non-blocking)
       try {
         const user_id = await getUserId();
         if (user_id) {
@@ -98,7 +87,7 @@ export default function Create() {
           console.log("✅ Auto-saved to history");
         }
       } catch (saveError) {
-        console.warn("⚠️ Could not auto-save to history (likely duplicate):", saveError);
+        console.warn("⚠️ Could not auto-save to history", saveError);
       }
 
     } catch (err) {
@@ -120,67 +109,163 @@ export default function Create() {
     });
   };
 
+  // Common Input Styles for reuse
+  const inputClasses = "w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all";
+
   return (
-    <section className="min-h-screen w-full flex justify-center py-10">
-      <div className="w-[90%] max-w-3xl flex flex-col gap-10">
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <div className="flex flex-col items-center mb-5">
-            <img src="Logo.png" alt="logo" className="h-20 w-20" />
-            <TextType className="text-3xl font-bold mt-2" text={["Content Generation"]} typingSpeed={100} pauseDuration={1500} />
+    <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-[#1e293b] to-slate-900 px-6 overflow-hidden relative">
+      
+      {/* Background Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none" />
+
+      <div className="w-full max-w-4xl flex flex-col gap-8 relative z-10">
+        
+        {/* History Button (Top Right) */}
+      <div className="absolute top-6 right-6 z-20">
+        <button
+          onClick={() => navigate("/create-history")}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-300 hover:text-cyan-400 hover:border-cyan-400/50 hover:bg-slate-800 transition-all backdrop-blur-md shadow-lg"
+        >
+          <img src="history.svg" className="h-4 w-4 opacity-70" alt="History" />
+          <span className="font-medium">History</span>
+        </button>
+      </div>
+
+        {/* INPUT CARD */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
+          <div className="flex flex-col items-center mb-8">
+            <img 
+              src="Logo.png" 
+              alt="logo" 
+              className="h-16 w-16 mb-4 drop-shadow-[0_0_15px_rgba(56,189,248,0.5)]" 
+            />
+            <div className="h-10">
+              <TextType 
+                className="text-3xl font-bold text-white tracking-tight" 
+                text={["Content Generation"]} 
+                typingSpeed={100} 
+                pauseDuration={1500} 
+              />
+            </div>
           </div>
 
           <form onSubmit={handleGenerate} className="space-y-5">
-            <input name="topic" value={formData.topic} onChange={handleInputChange} className="border h-12 w-full rounded-lg px-3" placeholder="Topic" required />
-            <textarea name="syllabus" value={formData.syllabus} onChange={handleInputChange} className="border w-full rounded-lg p-3 h-20" placeholder="Syllabus (optional)" />
-            <textarea name="summary" value={formData.summary} onChange={handleInputChange} className="border w-full rounded-lg p-3 h-20" placeholder="Summary (optional)" />
+            <div>
+              <input 
+                name="topic" 
+                value={formData.topic} 
+                onChange={handleInputChange} 
+                className={inputClasses} 
+                placeholder="What do you want to teach? (Topic)" 
+                required 
+              />
+            </div>
             
-            <div className="grid grid-cols-2 gap-4">
-                <select name="type" value={formData.type} onChange={handleInputChange} className="border h-12 rounded-lg px-3">
-                    <option value="">Select Type</option>
-                    <option value="Lesson Plan">Lesson Plan</option>
-                    <option value="Quiz">Quiz</option>
-                    <option value="Study Notes">Study Notes</option>
-                </select>
-                <select name="grade" value={formData.grade} onChange={handleInputChange} className="border h-12 rounded-lg px-3">
-                    <option value="">Select Grade</option>
-                    <option value="High School">High School</option>
-                    <option value="College/University">College/University</option>
-                </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+               <textarea 
+                 name="syllabus" 
+                 value={formData.syllabus} 
+                 onChange={handleInputChange} 
+                 className={`${inputClasses} h-24 resize-none`} 
+                 placeholder="Paste Syllabus or Requirements (Optional)" 
+               />
+               <textarea 
+                 name="summary" 
+                 value={formData.summary} 
+                 onChange={handleInputChange} 
+                 className={`${inputClasses} h-24 resize-none`} 
+                 placeholder="Specific focus or Summary (Optional)" 
+               />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="relative">
+                  <select 
+                    name="type" 
+                    value={formData.type} 
+                    onChange={handleInputChange} 
+                    className={`${inputClasses} appearance-none cursor-pointer`}
+                  >
+                      <option value="" className="bg-slate-800">Select Content Type</option>
+                      <option value="Lesson Plan" className="bg-slate-800">Lesson Plan</option>
+                      <option value="Quiz" className="bg-slate-800">Quiz</option>
+                      <option value="Study Notes" className="bg-slate-800">Study Notes</option>
+                  </select>
+                  {/* Custom Arrow */}
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                    <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <select 
+                    name="grade" 
+                    value={formData.grade} 
+                    onChange={handleInputChange} 
+                    className={`${inputClasses} appearance-none cursor-pointer`}
+                  >
+                      <option value="" className="bg-slate-800">Select Grade Level</option>
+                      <option value="High School" className="bg-slate-800">High School</option>
+                      <option value="College/University" className="bg-slate-800">College/University</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                    <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+                  </div>
+                </div>
             </div>
 
-            <button type="submit" disabled={loading} className="h-12 w-full rounded-xl bg-black text-white text-xl transition-opacity hover:opacity-90">
-              {loading ? "Generating..." : "Generate with AI"}
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full py-4 mt-2 rounded-xl bg-cyan-400 text-slate-900 font-bold text-lg shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.6)] hover:bg-cyan-300 hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </span>
+              ) : "✨Generate with AI"}
             </button>
           </form>
         </div>
 
+        {/* RESULTS CARD */}
         {result && (
-          <div className="w-full bg-white shadow-lg rounded-xl p-6">
-            <div className="flex justify-end mb-4 gap-3">
-              <button onClick={() => setIsEditing(!isEditing)} className="px-4 py-2 bg-gray-200 rounded-lg">
-                {isEditing ? "Done" : "Edit"}
-              </button>
-              <button onClick={() => handleDownloadPDF(result, formData.topic || "Document")} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
-                Download PDF
-              </button>
+          <div className="w-full bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-8 animate-fadeIn">
+            <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+              <h3 className="text-xl font-semibold text-cyan-400">Generated Content</h3>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setIsEditing(!isEditing)} 
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                >
+                  {isEditing ? "Preview" : "Edit Markdown"}
+                </button>
+                <button 
+                  onClick={() => handleDownloadPDF(result, formData.topic || "Document")} 
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all"
+                >
+                  Download PDF
+                </button>
+              </div>
             </div>
 
             {isEditing ? (
-              <textarea className="w-full h-96 border rounded-lg p-3 font-mono" value={result} onChange={(e) => setResult(e.target.value)} />
+              <textarea 
+                className="w-full h-[500px] bg-slate-950 border border-slate-700 rounded-xl p-4 font-mono text-sm text-slate-300 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 outline-none resize-none" 
+                value={result} 
+                onChange={(e) => setResult(e.target.value)} 
+              />
             ) : (
-              <div className="prose max-w-none border-t pt-4">
+              <div className="prose prose-invert prose-lg max-w-none prose-headings:text-cyan-50 prose-a:text-cyan-400 hover:prose-a:text-cyan-300 prose-pre:bg-slate-950 prose-pre:border prose-pre:border-slate-800">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
               </div>
             )}
           </div>
         )}
-        <button
-          onClick={() => navigate("/mindmaps-history")}
-          className="h-10 w-32 bg-[#101828] text-white text-lg rounded-lg absolute top-24 right-10 flex items-center justify-center gap-2"
-        >
-          <img src="history.svg" className="h-4" />
-          History
-        </button>
       </div>
     </section>
   );

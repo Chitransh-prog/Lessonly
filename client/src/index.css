@@ -1,18 +1,26 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Force edge visibility */
+/* Force edge visibility for React Flow */
 .react-flow__edge-path {
   stroke-opacity: 1 !important;
   stroke-width: 2px !important;
 }
 
+/* We define the dark variant logic here. 
+   Use class="dark" on your html or body tag to activate the .dark variables 
+*/
 @custom-variant dark (&:is(.dark *));
 
+/* GLOBAL BODY STYLES 
+   Updated to deep slate to match the dark theme by default 
+*/
 body {
-  background-color: #ffffff;
+  background-color: #0f172a; /* Deep Space Slate */
+  color: #f8fafc;            /* Off-white text */
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
-
 
 /* Animations */
 @keyframes fadeIn {
@@ -27,7 +35,7 @@ body {
 }
 .animate-slide-down { animation: slide-down 0.2s ease-out; }
 
-/* --- PDF AREA: STRIPPED CLEAN --- */
+/* --- PDF AREA: STRIPPED CLEAN (Unchanged to ensure PDF generation works) --- */
 #pdf-render-area,
 #pdf-render-area * {
   all: unset !important;
@@ -55,7 +63,7 @@ body {
   font-size: 13px !important;
 }
 
-/* ---- Tailwind theme fixes WITHOUT OKLCH ---- */
+/* ---- Tailwind theme fixes ---- */
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -84,64 +92,74 @@ body {
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem; /* Slightly rounder for the modern feel */
 
-  /* NORMAL HEX/RGB COLORS — No OKLCH */
+  /* DEFAULT / LIGHT MODE 
+     (Kept as fallback, but aligned with cooler slate tones)
+  */
   --background: #ffffff;
-  --foreground: #222222;
+  --foreground: #0f172a;
 
   --card: #ffffff;
-  --card-foreground: #222222;
+  --card-foreground: #0f172a;
 
   --popover: #ffffff;
-  --popover-foreground: #222222;
+  --popover-foreground: #0f172a;
 
-  --primary: #000000;
+  --primary: #0f172a;
   --primary-foreground: #ffffff;
 
-  --secondary: #f3f3f3;
-  --secondary-foreground: #222222;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
 
-  --muted: #f3f3f3;
-  --muted-foreground: #666666;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
 
-  --accent: #f3f3f3;
-  --accent-foreground: #222222;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
 
-  --destructive: #ff4d4d;
-
-  --border: #e2e2e2;
-  --input: #e2e2e2;
-  --ring: rgba(0, 0, 0, 0.3);
+  --destructive: #ef4444;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0f172a;
 }
 
+/* THE DEEP SPACE THEME (Image 5 Palette)
+   Active when 'dark' class is present on HTML/Body
+*/
 .dark {
-  --background: #111111;
-  --foreground: #ffffff;
+  --background: #0f172a; /* Slate 900 */
+  --foreground: #f8fafc; /* Slate 50 */
 
-  --card: #1a1a1a;
-  --card-foreground: #ffffff;
+  /* Glassmorphism Card Base */
+  --card: #1e293b;       /* Slate 800 */
+  --card-foreground: #f8fafc;
 
-  --popover: #1a1a1a;
-  --popover-foreground: #ffffff;
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
 
-  --primary: #ffffff;
-  --primary-foreground: #000000;
+  /* Primary Action: Neon Cyan (Create Notes) */
+  --primary: #22d3ee;    /* Cyan 400 */
+  --primary-foreground: #0f172a; /* Dark text on bright button */
 
-  --secondary: #333333;
+  /* Secondary Action: Royal Blue (Mindmaps) */
+  --secondary: #2563eb;  /* Blue 600 */
   --secondary-foreground: #ffffff;
 
-  --muted: #333333;
-  --muted-foreground: #aaaaaa;
+  --muted: #334155;      /* Slate 700 */
+  --muted-foreground: #94a3b8; /* Slate 400 */
 
-  --accent: #333333;
+  --accent: #1e293b;
   --accent-foreground: #ffffff;
 
-  --destructive: #ff6666;
+  --destructive: #f87171; /* Red 400 */
 
+  /* Glass Borders */
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.15);
-  --ring: rgba(255, 255, 255, 0.5);
+  
+  /* Glow Ring */
+  --ring: rgba(34, 211, 238, 0.5); /* Cyan Glow */
 }
 
 @layer base {
