@@ -1,248 +1,495 @@
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-import { marked } from "marked";
-import hljs from "highlight.js";
-
-// Note: We do NOT import the CSS here because it won't apply to the iframe.
-// We inject it manually below.
-
+import "jspdf-autotable";
+ 
+// ─── Colour & Typography constants ───────────────────────────────────────────
+const BRAND = {
+  primary: [34, 211, 238],   // cyan-400  #22D3EE
+  dark:    [15,  23,  42],   // slate-900 #0F172A
+  heading: [14, 165, 233],   // sky-500   #0EA5E9
+  body:    [30,  41,  59],   // slate-800 #1E293B
+  muted:   [100, 116, 139],  // slate-500 #64748B
+  white:   [255, 255, 255],
+  light:   [241, 245, 249],  // slate-100
+  border:  [203, 213, 225],  // slate-300
+};
+ 
+const FONT = {
+  title:    { size: 22, style: "bold" },
+  h1:       { size: 18, style: "bold" },
+  h2:       { size: 15, style: "bold" },
+  h3:       { size: 13, style: "bold" },
+  body:     { size: 11, style: "normal" },
+  code:     { size: 9,  style: "normal" },
+  small:    { size: 9,  style: "normal" },
+  footer:   { size: 8,  style: "normal" },
+};
+ 
+const PAGE = {
+  width: 210,   // A4 mm
+  height: 297,
+  marginX: 18,
+  marginTop: 28,
+  marginBottom: 20,
+  lineHeight: 6,
+};
+ 
+// ─── Main export ─────────────────────────────────────────────────────────────
+ 
+/**
+ * @param {string} markdown   - The raw Markdown string from AI
+ * @param {object} options
+ *   @param {string} options.title          - Document title shown in header
+ *   @param {string} options.filename       - Output filename (no .pdf needed)
+ *   @param {string} [options.watermarkText]  - Diagonal watermark (e.g. "LESSONLY")
+ *   @param {string} [options.headerText]     - Top-right corner brand text
+ *   @param {string} [options.headerImageUrl] - URL/path to logo image (optional)
+ */
 export async function generatePDFFromMarkdown(markdown, options = {}) {
   const {
     title = "Document",
+    filename = "document",
+    watermarkText = "LESSONLY",
     headerText = "LESSONLY",
-    headerImageUrl = "/Logo.png", // Default to your local logo
-    filename = "generated-document.pdf",
+    headerImageUrl = null,
   } = options;
-
-  // --- 1. Load Header Logo (Pre-fetch) ---
-  const logoPromise = new Promise((resolve) => {
-    if (!headerImageUrl) return resolve(null);
-    const img = new Image();
-    img.src = headerImageUrl;
-    img.crossOrigin = "Anonymous"; // Critical for html2canvas
-    img.onload = () => resolve(img);
-    img.onerror = () => {
-      console.warn("Header image failed to load");
-      resolve(null);
-    };
-  });
-
-  const logoImage = await logoPromise;
-
-  // --- 2. Setup HTML & Styles ---
-  // We use a CDN for highlight.js styles so the iframe can access them
-  const hljsStyleUrl = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css";
-
-  const htmlContent = marked.parse(markdown || "");
-  
-  const iframeHTML = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <link rel="stylesheet" href="${hljsStyleUrl}">
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-          
-          html, body { 
-            margin: 0; padding: 0; 
-            background: #ffffff; 
-            color: #111827; 
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-          }
-          
-          /* A4 Dimensions (approx) for the container to match PDF ratio */
-          .pdf-container { 
-            width: 794px; /* A4 width at 96 DPI */
-            min-height: 1123px;
-            padding: 40px 50px; 
-            box-sizing: border-box;
-          }
-
-          /* Typography */
-          h1.doc-title { 
-            font-size: 32px; 
-            font-weight: 800; 
-            margin-bottom: 20px; 
-            border-bottom: 3px solid #000; 
-            padding-bottom: 10px;
-          }
-          h1 { font-size: 24px; margin-top: 24px; font-weight: 700; color: #111; }
-          h2 { font-size: 20px; margin-top: 20px; font-weight: 600; color: #333; }
-          p { font-size: 14px; line-height: 1.6; color: #374151; margin-bottom: 12px; }
-          
-          /* Code Blocks */
-          pre { 
-            background: #f3f4f6; 
-            border: 1px solid #e5e7eb; 
-            border-radius: 8px; 
-            padding: 16px; 
-            margin: 16px 0;
-            white-space: pre-wrap; /* Prevents horizontal scroll cutting off code */
-          }
-          code { font-family: 'Courier New', monospace; font-size: 13px; color: #1f2937; }
-          
-          /* Tables */
-          table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-          th { background: #f9fafb; font-weight: 600; text-align: left; }
-          th, td { border: 1px solid #d1d5db; padding: 10px; font-size: 13px; }
-
-          /* Images */
-          img { max-width: 100%; height: auto; border-radius: 4px; }
-          
-          /* Blockquotes */
-          blockquote {
-            border-left: 4px solid #3b82f6;
-            background: #eff6ff;
-            margin: 16px 0;
-            padding: 12px 20px;
-            color: #1e40af;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="pdf-container" id="pdf-content">
-          <h1 class="doc-title">${title}</h1>
-          ${htmlContent}
-        </div>
-      </body>
-    </html>
-  `;
-
-  // --- 3. Create Invisible Iframe ---
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.left = "-10000px";
-  iframe.style.top = "0";
-  iframe.style.width = "850px"; // Slightly larger than container
-  iframe.style.height = "2000px";
-  document.body.appendChild(iframe);
-
-  const idoc = iframe.contentDocument;
-  idoc.open();
-  idoc.write(iframeHTML);
-  idoc.close();
-
-  // --- 4. Wait for Assets to Load ---
-  await new Promise((resolve) => {
-    // Wait for the iframe itself to load (CSS, etc)
-    iframe.onload = async () => {
-      // Also wait for any images inside the markdown content
-      const images = Array.from(idoc.images);
-      await Promise.all(
-        images.map((img) => {
-          if (img.complete) return Promise.resolve();
-          return new Promise((res) => { 
-            img.onload = res; 
-            img.onerror = res; 
-          });
-        })
-      );
-      // Small buffer for font rendering
-      setTimeout(resolve, 500);
-    };
-  });
-
-  // Apply Syntax Highlighting inside iframe
-  idoc.querySelectorAll("pre code").forEach((block) => {
-    hljs.highlightElement(block);
-  });
-
-  // --- 5. Capture Canvas ---
-  const element = idoc.getElementById("pdf-content");
-  const scale = 2; // Higher scale for sharper text
-  
-  const canvas = await html2canvas(element, {
-    scale: scale,
-    useCORS: true, // Crucial for external images
-    logging: false,
-    backgroundColor: "#ffffff",
-    windowWidth: 850,
-  });
-
-  // --- 6. Generate PDF (Image Slicing Method) ---
-  const pdf = new jsPDF("p", "pt", "a4");
-  const pdfW = pdf.internal.pageSize.getWidth();  // 595.28 pt
-  const pdfH = pdf.internal.pageSize.getHeight(); // 841.89 pt
-  
-  const margin = 30;
-  const contentWidth = pdfW - (margin * 2);
-  const contentHeight = pdfH - (margin * 2);
-
-  const imgWidth = canvas.width;
-  const imgHeight = canvas.height;
-  
-  // Calculate ratio to fit canvas width into PDF content width
-  const ratio = contentWidth / imgWidth;
-  
-  // Convert PDF page height to canvas pixels
-  const pageHeightInCanvasPixels = contentHeight / ratio;
-
-  let heightLeft = imgHeight;
-  let position = 0;
-  let pageCount = 0;
-
-  while (heightLeft > 0) {
-    if (pageCount > 0) {
-      pdf.addPage();
+ 
+  const doc = new jsPDF({ unit: "mm", format: "a4", putOnlyUsedFonts: true });
+  const usableWidth = PAGE.width - PAGE.marginX * 2;
+  let y = PAGE.marginTop;
+ 
+  // ── Helper: add header/footer to every page ──────────────────────────────
+  const addPageDecorations = async (pageNum, totalPages, logoDataUrl) => {
+    // Header bar
+    doc.setFillColor(...BRAND.dark);
+    doc.rect(0, 0, PAGE.width, 14, "F");
+ 
+    // Logo (if available)
+    if (logoDataUrl) {
+      try {
+        doc.addImage(logoDataUrl, "PNG", PAGE.marginX, 2, 10, 10);
+      } catch (_) { /* skip if image fails */ }
     }
-
-    // --- Draw Header on every page ---
-    // Background for header to cover any slice seams
-    pdf.setFillColor(255, 255, 255);
-    pdf.rect(0, 0, pdfW, margin + 20, 'F');
-    
-    // Logo
-    if (logoImage) {
-      // Keep aspect ratio
-      const logoW = 25;
-      const logoH = (logoImage.height / logoImage.width) * logoW;
-      pdf.addImage(logoImage, "PNG", margin, 15, logoW, logoH);
-    }
-    
-    // Header Text
-    pdf.setFontSize(9);
-    pdf.setTextColor(150);
-    pdf.text(headerText, pdfW - margin, 30, { align: "right" });
-    
-    // --- Draw Content Slice ---
-    // Add Image slice
-    // We add a slight vertical offset (margin + 20) to push content below header
-    const topOffset = margin + 20;
-    
-    // Create a temporary canvas to slice the exact piece we need
-    // This prevents "stretching" or "squashing" artifacts in jsPDF
-    const sourceY = position;
-    const sourceH = Math.min(heightLeft, pageHeightInCanvasPixels);
-    
-    const sliceCanvas = document.createElement('canvas');
-    sliceCanvas.width = imgWidth;
-    sliceCanvas.height = sourceH;
-    
-    const ctx = sliceCanvas.getContext('2d');
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0,0, sliceCanvas.width, sliceCanvas.height);
-    
-    // Draw the specific slice from original canvas
-    ctx.drawImage(
-      canvas, 
-      0, sourceY, imgWidth, sourceH, // Source
-      0, 0, imgWidth, sourceH        // Destination
+ 
+    // Brand text top-right
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...BRAND.primary);
+    doc.text(headerText, PAGE.width - PAGE.marginX, 9, { align: "right" });
+ 
+    // Footer
+    doc.setFillColor(...BRAND.light);
+    doc.rect(0, PAGE.height - PAGE.marginBottom + 4, PAGE.width, PAGE.marginBottom, "F");
+    doc.setDrawColor(...BRAND.border);
+    doc.setLineWidth(0.3);
+    doc.line(PAGE.marginX, PAGE.height - PAGE.marginBottom + 4, PAGE.width - PAGE.marginX, PAGE.height - PAGE.marginBottom + 4);
+ 
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(FONT.footer.size);
+    doc.setTextColor(...BRAND.muted);
+    doc.text(
+      `Generated by ${headerText} · ${new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}`,
+      PAGE.marginX,
+      PAGE.height - 6
     );
-
-    const sliceData = sliceCanvas.toDataURL("image/jpeg", 0.95);
-    
-    // Calculate height in PDF points
-    const pdfSliceHeight = sourceH * ratio;
-
-    pdf.addImage(sliceData, "JPEG", margin, topOffset, contentWidth, pdfSliceHeight);
-
-    heightLeft -= pageHeightInCanvasPixels;
-    position += pageHeightInCanvasPixels;
-    pageCount++;
+    doc.text(`Page ${pageNum} of ${totalPages}`, PAGE.width - PAGE.marginX, PAGE.height - 6, { align: "right" });
+ 
+    // Diagonal watermark
+    if (watermarkText) {
+      doc.saveGraphicsState();
+      doc.setGState(new doc.GState({ opacity: 0.04 }));
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(55);
+      doc.setTextColor(...BRAND.dark);
+      doc.text(watermarkText, PAGE.width / 2, PAGE.height / 2, {
+        align: "center",
+        angle: 45,
+        baseline: "middle",
+      });
+      doc.restoreGraphicsState();
+    }
+  };
+ 
+  // ── Helper: ensure enough vertical space, add page if needed ─────────────
+  const checkY = (needed = 10) => {
+    if (y + needed > PAGE.height - PAGE.marginBottom - 4) {
+      doc.addPage();
+      y = PAGE.marginTop;
+    }
+  };
+ 
+  // ── Helper: wrapped text block ────────────────────────────────────────────
+  const writeText = (text, { size, style, color, indent = 0, spacing = 1.5 } = {}) => {
+    doc.setFont("helvetica", style || "normal");
+    doc.setFontSize(size || FONT.body.size);
+    doc.setTextColor(...(color || BRAND.body));
+ 
+    const lines = doc.splitTextToSize(text, usableWidth - indent);
+    const blockH = lines.length * (size || FONT.body.size) * 0.352778 * spacing + 2;
+    checkY(blockH);
+    doc.text(lines, PAGE.marginX + indent, y);
+    y += blockH;
+  };
+ 
+  // ── Helper: horizontal divider ────────────────────────────────────────────
+  const writeDivider = (color = BRAND.border) => {
+    checkY(4);
+    doc.setDrawColor(...color);
+    doc.setLineWidth(0.3);
+    doc.line(PAGE.marginX, y, PAGE.width - PAGE.marginX, y);
+    y += 4;
+  };
+ 
+  // ── Helper: bullet item ───────────────────────────────────────────────────
+  const writeBullet = (text, level = 0) => {
+    const indent = 4 + level * 5;
+    const bullet = level === 0 ? "•" : level === 1 ? "◦" : "▸";
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(FONT.body.size);
+    doc.setTextColor(...BRAND.body);
+ 
+    const lines = doc.splitTextToSize(text, usableWidth - indent - 6);
+    const blockH = lines.length * FONT.body.size * 0.352778 * 1.5 + 1;
+    checkY(blockH);
+ 
+    doc.text(bullet, PAGE.marginX + indent, y);
+    doc.text(lines, PAGE.marginX + indent + 5, y);
+    y += blockH;
+  };
+ 
+  // ── Helper: numbered item ─────────────────────────────────────────────────
+  const writeNumbered = (text, num) => {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(FONT.body.size);
+    doc.setTextColor(...BRAND.body);
+ 
+    const prefix = `${num}.  `;
+    const lines = doc.splitTextToSize(text, usableWidth - 10);
+    const blockH = lines.length * FONT.body.size * 0.352778 * 1.5 + 1;
+    checkY(blockH);
+ 
+    doc.setFont("helvetica", "bold");
+    doc.text(`${num}.`, PAGE.marginX + 2, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(lines, PAGE.marginX + 10, y);
+    y += blockH;
+  };
+ 
+  // ── Helper: inline code block ─────────────────────────────────────────────
+  const writeCodeBlock = (code) => {
+    const lines = code.split("\n");
+    const blockH = lines.length * FONT.code.size * 0.352778 * 1.6 + 8;
+    checkY(blockH);
+ 
+    // Background
+    doc.setFillColor(15, 23, 42); // slate-900
+    doc.roundedRect(PAGE.marginX, y - 2, usableWidth, blockH - 2, 2, 2, "F");
+    doc.setDrawColor(...BRAND.border);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(PAGE.marginX, y - 2, usableWidth, blockH - 2, 2, 2, "S");
+ 
+    doc.setFont("courier", "normal");
+    doc.setFontSize(FONT.code.size);
+    doc.setTextColor(134, 239, 172); // green-300
+ 
+    lines.forEach((line) => {
+      const wrapped = doc.splitTextToSize(line || " ", usableWidth - 8);
+      doc.text(wrapped, PAGE.marginX + 4, y + 2);
+      y += wrapped.length * FONT.code.size * 0.352778 * 1.6;
+    });
+    y += 6;
+  };
+ 
+  // ── Helper: blockquote ────────────────────────────────────────────────────
+  const writeBlockquote = (text) => {
+    const lines = doc.splitTextToSize(text, usableWidth - 12);
+    const blockH = lines.length * FONT.body.size * 0.352778 * 1.5 + 6;
+    checkY(blockH);
+ 
+    doc.setFillColor(226, 232, 240); // slate-200
+    doc.rect(PAGE.marginX, y - 2, 2, blockH, "F");
+    doc.setFillColor(241, 245, 249);
+    doc.rect(PAGE.marginX + 2, y - 2, usableWidth - 2, blockH, "F");
+ 
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(FONT.body.size);
+    doc.setTextColor(...BRAND.muted);
+    doc.text(lines, PAGE.marginX + 6, y + 2);
+    y += blockH + 2;
+  };
+ 
+  // ── Heading with background accent ───────────────────────────────────────
+  const writeHeading = (text, level) => {
+    const cfg = level === 1 ? FONT.h1 : level === 2 ? FONT.h2 : FONT.h3;
+    const h = cfg.size * 0.352778 * 1.8 + 4;
+    checkY(h + 4);
+ 
+    if (level === 1) {
+      doc.setFillColor(...BRAND.dark);
+      doc.rect(PAGE.marginX, y - 3, usableWidth, h, "F");
+      // Cyan accent bar
+      doc.setFillColor(...BRAND.primary);
+      doc.rect(PAGE.marginX, y - 3, 3, h, "F");
+ 
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(cfg.size);
+      doc.setTextColor(...BRAND.white);
+      doc.text(text, PAGE.marginX + 7, y + h / 2 - 2);
+      y += h + 4;
+    } else if (level === 2) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(cfg.size);
+      doc.setTextColor(...BRAND.heading);
+      doc.text(text, PAGE.marginX, y + cfg.size * 0.352778);
+      y += cfg.size * 0.352778 * 1.6 + 2;
+      // Underline
+      doc.setDrawColor(...BRAND.primary);
+      doc.setLineWidth(0.5);
+      doc.line(PAGE.marginX, y, PAGE.marginX + 50, y);
+      y += 3;
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(cfg.size);
+      doc.setTextColor(...BRAND.body);
+      doc.text(text, PAGE.marginX, y + cfg.size * 0.352778);
+      y += cfg.size * 0.352778 * 1.6 + 2;
+    }
+  };
+ 
+  // ── Helper: render Markdown table with autoTable ─────────────────────────
+  const writeTable = (rows) => {
+    if (rows.length < 2) return;
+    const headers = rows[0].map((h) => h.trim().replace(/\*\*/g, ""));
+    const body = rows.slice(2).map((r) => r.map((c) => c.trim().replace(/\*\*/g, "")));
+ 
+    checkY(20);
+    doc.autoTable({
+      startY: y,
+      head: [headers],
+      body,
+      margin: { left: PAGE.marginX, right: PAGE.marginX },
+      styles: {
+        font: "helvetica",
+        fontSize: 9,
+        cellPadding: 3,
+        textColor: BRAND.body,
+        lineColor: BRAND.border,
+        lineWidth: 0.2,
+      },
+      headStyles: {
+        fillColor: BRAND.dark,
+        textColor: BRAND.white,
+        fontStyle: "bold",
+        halign: "left",
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      theme: "grid",
+    });
+    y = doc.lastAutoTable.finalY + 6;
+  };
+ 
+  // ── Title page ────────────────────────────────────────────────────────────
+  const drawTitlePage = async (logoDataUrl) => {
+    // Full dark background
+    doc.setFillColor(...BRAND.dark);
+    doc.rect(0, 0, PAGE.width, PAGE.height, "F");
+ 
+    // Decorative top band
+    doc.setFillColor(...BRAND.primary);
+    doc.rect(0, 0, PAGE.width, 3, "F");
+ 
+    // Logo
+    if (logoDataUrl) {
+      try {
+        doc.addImage(logoDataUrl, "PNG", PAGE.width / 2 - 15, 40, 30, 30);
+      } catch (_) {}
+    }
+ 
+    // Brand
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...BRAND.primary);
+    doc.text(headerText, PAGE.width / 2, 80, { align: "center" });
+ 
+    // Title
+    const titleLines = doc.splitTextToSize(title, PAGE.width - 50);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(26);
+    doc.setTextColor(...BRAND.white);
+    titleLines.forEach((line, i) => {
+      doc.text(line, PAGE.width / 2, 100 + i * 12, { align: "center" });
+    });
+ 
+    // Divider
+    doc.setDrawColor(...BRAND.primary);
+    doc.setLineWidth(0.8);
+    const tw = Math.min(doc.getTextWidth(title) + 20, PAGE.width - 50);
+    doc.line(PAGE.width / 2 - tw / 2, 115 + titleLines.length * 12 - 12, PAGE.width / 2 + tw / 2, 115 + titleLines.length * 12 - 12);
+ 
+    // Date
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...BRAND.muted);
+    doc.text(
+      new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" }),
+      PAGE.width / 2,
+      130 + titleLines.length * 12,
+      { align: "center" }
+    );
+ 
+    // Bottom decoration
+    doc.setFillColor(...BRAND.primary);
+    doc.rect(0, PAGE.height - 3, PAGE.width, 3, "F");
+  };
+ 
+  // ─── Main parsing logic ───────────────────────────────────────────────────
+ 
+  // Load logo as data URL for embedding
+  let logoDataUrl = null;
+  if (headerImageUrl) {
+    try {
+      logoDataUrl = await loadImageAsDataURL(headerImageUrl);
+    } catch (_) {}
   }
-
-  // --- 7. Save & Cleanup ---
-  pdf.save(filename);
-  document.body.removeChild(iframe);
+ 
+  // Title page
+  await drawTitlePage(logoDataUrl);
+ 
+  // Content starts on page 2
+  doc.addPage();
+  y = PAGE.marginTop;
+ 
+  // Parse Markdown line by line
+  const lines = markdown.split("\n");
+  let i = 0;
+  let orderedCounter = 0;
+ 
+  while (i < lines.length) {
+    const line = lines[i];
+ 
+    // ── Fenced code block ````
+    if (line.trimStart().startsWith("```")) {
+      const codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].trimStart().startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      writeCodeBlock(codeLines.join("\n"));
+      i++;
+      continue;
+    }
+ 
+    // ── Headings
+    if (/^#{1,3}\s/.test(line)) {
+      const level = line.match(/^(#+)/)[1].length;
+      const text = line.replace(/^#+\s*/, "").replace(/\*\*/g, "").trim();
+      writeHeading(text, Math.min(level, 3));
+      orderedCounter = 0;
+      i++;
+      continue;
+    }
+ 
+    // ── Horizontal rule
+    if (/^[-*_]{3,}$/.test(line.trim())) {
+      writeDivider(BRAND.primary);
+      i++;
+      continue;
+    }
+ 
+    // ── Blockquote
+    if (line.startsWith(">")) {
+      const text = line.replace(/^>\s*/, "").trim();
+      writeBlockquote(text);
+      i++;
+      continue;
+    }
+ 
+    // ── Table detection (row starts with |)
+    if (line.trim().startsWith("|")) {
+      const tableRows = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        const cells = lines[i].split("|").filter((c) => c.trim() !== "").map((c) => c.trim());
+        tableRows.push(cells);
+        i++;
+      }
+      writeTable(tableRows);
+      continue;
+    }
+ 
+    // ── Unordered bullet
+    if (/^(\s*)[-*+]\s/.test(line)) {
+      const indent = line.match(/^(\s*)/)[1].length;
+      const level = Math.floor(indent / 2);
+      const text = line.replace(/^(\s*)[-*+]\s/, "").replace(/\*\*(.*?)\*\*/g, "$1").trim();
+      writeBullet(text, level);
+      orderedCounter = 0;
+      i++;
+      continue;
+    }
+ 
+    // ── Ordered list
+    if (/^\d+\.\s/.test(line.trim())) {
+      orderedCounter++;
+      const text = line.replace(/^\d+\.\s/, "").replace(/\*\*(.*?)\*\*/g, "$1").trim();
+      writeNumbered(text, orderedCounter);
+      i++;
+      continue;
+    }
+ 
+    // ── Empty line → spacing
+    if (line.trim() === "") {
+      y += 3;
+      orderedCounter = 0;
+      i++;
+      continue;
+    }
+ 
+    // ── Regular paragraph
+    const cleaned = line
+      .replace(/\*\*(.*?)\*\*/g, "$1")   // remove bold markers
+      .replace(/\*(.*?)\*/g, "$1")        // remove italic markers
+      .replace(/`(.*?)`/g, "$1")          // remove inline code backticks
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // remove links, keep text
+      .trim();
+ 
+    if (cleaned) {
+      writeText(cleaned, { size: FONT.body.size, color: BRAND.body });
+    }
+ 
+    orderedCounter = 0;
+    i++;
+  }
+ 
+  // ── Add header/footer decorations to all pages ───────────────────────────
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    if (p > 1) {
+      // Only content pages (page 1 is title page, skip decorations)
+      await addPageDecorations(p - 1, totalPages - 1, logoDataUrl);
+    }
+  }
+ 
+  // ── Save ─────────────────────────────────────────────────────────────────
+  const safeFilename = filename.replace(/\.pdf$/i, "").replace(/[^a-z0-9\-_ ]/gi, "_");
+  doc.save(`${safeFilename}.pdf`);
+}
+ 
+// ─── Utility: load image as base64 dataURL ────────────────────────────────
+function loadImageAsDataURL(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext("2d").drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
 }
